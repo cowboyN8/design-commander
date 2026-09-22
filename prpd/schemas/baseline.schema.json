@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR Pattern Detective project baseline",
+  "type": "object",
+  "required": [
+    "version",
+    "repo",
+    "initialized_at",
+    "outcome",
+    "dimensions",
+    "stack",
+    "sources",
+    "accessibility_target",
+    "foundations",
+    "components",
+    "gaps",
+    "legacy_patterns",
+    "exceptions",
+    "migrations",
+    "library_page"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "repo": { "type": "string", "minLength": 1 },
+    "initialized_at": { "type": "string", "format": "date-time" },
+    "outcome": { "enum": ["ready", "ready_with_gaps", "blocked"] },
+    "dimensions": {
+      "type": "object",
+      "required": ["figma", "coded_system", "source_relationship", "maturity"],
+      "properties": {
+        "figma": { "enum": ["absent", "unavailable", "partial", "complete"] },
+        "coded_system": { "enum": ["absent", "partial", "complete", "external", "multiple"] },
+        "source_relationship": { "enum": ["not_applicable", "aligned", "drifted", "authority_unclear"] },
+        "maturity": { "enum": ["greenfield", "existing_consistent", "existing_inconsistent", "active_migration"] }
+      },
+      "additionalProperties": false
+    },
+    "stack": {
+      "type": "object",
+      "required": ["framework", "styling", "component_dir", "token_files"],
+      "properties": {
+        "framework": { "type": "string" },
+        "styling": { "type": "string" },
+        "component_dir": { "type": "string" },
+        "token_files": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "location", "authority", "scope"],
+        "properties": {
+          "type": { "enum": ["figma", "code", "tokens", "storybook", "guidance", "canonical_example"] },
+          "location": { "type": "string" },
+          "authority": { "enum": ["authoritative", "reference", "deprecated"] },
+          "scope": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "accessibility_target": { "type": "string", "default": "WCAG 2.2 AA" },
+    "foundations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "enum": ["approved", "gap", "legacy"] },
+          "source": { "type": ["string", "null"] },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "enum": ["approved", "gap", "legacy", "deprecated"] },
+          "source": { "type": "string" },
+          "path": { "type": "string" },
+          "figma_ref": { "type": "string" },
+          "variants": { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["area", "description"],
+        "properties": {
+          "area": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "legacy_patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "description": { "type": "string" },
+          "location": { "type": "string" },
+          "note": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ticket", "scope", "rationale", "approved_at"],
+        "properties": {
+          "ticket": { "type": "string" },
+          "scope": { "type": "string" },
+          "rationale": { "type": "string" },
+          "approved_at": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "migrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "status"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "status": { "enum": ["planned", "in_progress"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "library_page": { "type": "string" }
+  },
+  "additionalProperties": false
+}

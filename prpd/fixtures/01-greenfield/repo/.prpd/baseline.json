@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "repo": "greenfield-app",
+  "initialized_at": "2026-09-18T16:16:50.246663+00:00",
+  "outcome": "blocked",
+  "dimensions": {
+    "figma": "absent",
+    "coded_system": "absent",
+    "source_relationship": "not_applicable",
+    "maturity": "greenfield"
+  },
+  "stack": {
+    "framework": "",
+    "styling": "",
+    "component_dir": "",
+    "token_files": []
+  },
+  "sources": [],
+  "accessibility_target": "WCAG 2.2 AA",
+  "foundations": {},
+  "components": [],
+  "gaps": [],
+  "legacy_patterns": [],
+  "exceptions": [],
+  "migrations": [],
+  "library_page": ""
+}

@@ -1,0 +1,29 @@
+{
+  "id": "01-greenfield",
+  "stage": "init",
+  "description": "Empty React app scaffold. No Figma, no coded design system, no meaningful source material. Tests the full generative path: stack questions, roadmap, progressive layer build, library page, baseline write.",
+  "expected": {
+    "dimensions": {
+      "figma": "absent",
+      "coded_system": "absent",
+      "source_relationship": "not_applicable",
+      "maturity": "greenfield"
+    },
+    "outcome": ["ready", "ready_with_gaps"],
+    "behaviors": [
+      "asks stack questions before generating code",
+      "presents high-level roadmap before building layers",
+      "builds foundations before components",
+      "requires user approval per layer",
+      "generates a design-system library page",
+      "writes baseline via prpd.py (schema-valid)",
+      "check-files passes at end of run"
+    ]
+  },
+  "user_simulation": {
+    "notes": "Expected answers a simulated user would give during init.",
+    "stack": { "framework": "react", "styling": "css-modules" },
+    "accessibility_target": "WCAG 2.2 AA",
+    "approvals": "approve all layer specs as presented"
+  }
+}

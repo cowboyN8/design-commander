@@ -261,7 +261,7 @@ The findings and decisions from `/ticket-agent` should remain attached to the ti
 
 The current lifecycle is:
 
-1. Initialize the repository.
+1. Run `/init-agent <repo>` to initialize the repository.
 2. Determine the available Figma, coded-system, source-alignment, and repository-maturity states.
 3. Validate, reconcile, complete, or create the design system with the user.
 4. Save the approved project-specific baseline.
@@ -277,16 +277,68 @@ I decided that this case study should remain a living record rather than a retro
 
 I chose this approach because the reasoning, uncertainty, and course corrections are part of the case study. Recording only the final architecture would hide how the project evolved and why its boundaries were chosen. Decisions will be described in my first-person voice without inventing motivations that were not established through the work.
 
+## Creating a living technical specification
+
+As the product architecture became more concrete, I decided to create `technical-spec.md` while continuing the design process rather than waiting until every decision was finished. The case study and specification serve different purposes: this case study preserves my first-person reasoning and changes in direction, while the technical specification defines the system's current normative behavior.
+
+I chose to develop them together so implementation requirements do not have to be reconstructed later from a long conversation. Confirmed decisions become requirements in the specification, while unresolved proposals remain explicitly marked as open.
+
+I made synchronization a formal project rule: every confirmed decision in chat or implementation that contributes to the product must update both documents in the same task. This applies to building blocks, features, scope, workflows, interfaces, architecture, data contracts, policies, constraints, and revisions to earlier decisions. I chose not to defer these updates to later summaries because that would allow the documented journey and the implementable requirements to drift apart.
+
+The first draft consolidates the initialization dimension model, minimum-baseline requirements, progressive design-system workflow, ticket and PR commands, three review-engine boundaries, component traceability policy, and the remaining technical decisions. This marks the beginning of formal technical specification work, not the completion of the architecture.
+
+## Locking down how initialization runs
+
+With the initialization workflow defined, I worked through the remaining structural decisions about how it is invoked, where its output lives, and how generated code lands.
+
+I named the initialization command `/init-agent <repo>` so it matches `/ticket-agent` and `/pr-agent`. The three commands form one family of agents across the lifecycle.
+
+For the approved project baseline, I chose a single committed file at `.prpd/baseline.json`. The baseline encodes design authority for the repository, so I want it versioned, shared with the team, and reviewable in pull requests rather than hidden on one developer's machine. I considered a multi-file `.prpd/` directory for readability at scale, but I preferred the simplicity of one file for the MVP; the field-level schema is still open.
+
+I also decided that the initializer writes approved layers directly into the repository instead of producing per-layer PRs or specs for developers to implement later. The per-layer approval step already gives me control over what gets built, so adding a separate PR or ticket pipeline for each layer would slow initialization without adding meaningful oversight. Per-layer PRs can be reconsidered later if teams want code-level review of generated layers.
+
+Before the initializer generates any code, it must ask for the key implementation details it cannot safely assume — the target framework such as React, the styling approach, and related stack decisions. And to make generated work reviewable beyond code diffs, I decided the initializer produces a design-system library page that renders the generated foundations and components for visual testing. I want to see the system it built, not just trust the specification.
+
+For Figma access, I chose the Figma MCP server over raw REST calls or manual exports because it gives the agent structured design context — components, variables, styles, and frames — without me hand-parsing API responses. If the MCP server or files are unreachable, the initializer records Figma as `unavailable` rather than `absent`; an inaccessible source is different evidence than a missing one.
+
+For the minimum-baseline criteria, I decided the initializer verifies in code wherever verification is possible: expected token and component files exist, generated code compiles, and the library page builds. I only want to be asked about judgment calls that code cannot decide — source authority, how much a gap matters, whether a frequent pattern is precedent or legacy. This keeps my approval focused on intent instead of mechanical checks the machine can do itself.
+
+When both Figma and code are available, I decided the initializer asks me which source to start from — Figma-first or code-first — and then works through them in that order. Which source should lead depends on the project, and it is a judgment call I want to make rather than have the tool assume.
+
+I also decided validation is incremental. Once a layer or the library has passed, later additions only need to validate the new changes — revalidating the entire library every time something is added would waste effort on work that already passed.
+
+For Azure DevOps access, I decided to use the ADO MCP server for ticket and pull-request retrieval, consistent with the Figma MCP choice. Both external integrations go through MCP servers rather than raw API calls.
+
+For how the commands are actually implemented, I chose a hybrid: LLM agent prompts drive the judgment work — classification, questioning, specification, and review reasoning — while deterministic helpers handle baseline writes, file checks, and build validation. Mechanical checks should not depend on how reliably a model formats its output, and agent responses should not be the only evidence for something code can verify directly.
+
+I set the default accessibility target to WCAG 2.2 AA — the current standard and a superset of 2.1 AA. Initialization still confirms the target per repository because different projects can carry different obligations, and the confirmed value is stored in the baseline.
+
+I then defined the `baseline.json` schema. It records the classification dimensions (so later stages can see why decisions were made), the confirmed stack, the authority of each source per scope, the approved/gap/legacy status of every foundation and component, known gaps, legacy patterns, ticket-scoped exceptions, migrations, the accessibility target, and the library page path. Per-ticket context — findings and approved decisions from `/ticket-agent` — lives in a separate `.prpd/tickets.json` file rather than inside the baseline, so ticket history does not bloat the design-system record.
+
+## Beginning initializer implementation
+
+With every initialization decision closed, I started scaffolding `/init-agent` under `prpd/`. The structure mirrors the hybrid decision: `prpd/commands/init-agent.md` is the agent prompt that drives judgment work, `prpd/schemas/` holds the JSON Schemas for `baseline.json` and `tickets.json`, and `prpd/tools/prpd.py` is the deterministic helper CLI for baseline writes, schema validation, file-existence checks, and per-ticket context. The agent prompt explicitly forbids hand-writing the JSON files so all mechanical output stays schema-valid. I verified the helper end-to-end against a scratch repository before committing to this structure.
+
+I also nailed down the library-page convention: a committed page inside the repo, served by the repo's own dev server at a local route — for Vite, a root `library.html` entry rendering `src/design-system/` components, no router required. It renders every approved foundation and every component in all variants and states, organized by layer order, so I can run `npm run dev` and visually test what the initializer built. I chose deferring full fixture testing until product completion rather than testing each stage in isolation — the components are prompts and small helpers that are cheap to change, and I want the end-to-end test to exercise the real workflow.
+
+For testing, I defined the fixture approach: each fixture is a directory under `prpd/fixtures/` containing a `fixture.json` manifest — expected dimension classification, expected outcome, expected behaviors, and simulated-user answers — plus a `repo/` directory holding the target repository. I built the first fixture, `01-greenfield`: a minimal Vite + React scaffold with no design system, which exercises the full generative path. The fixture format itself remains open until more fixtures prove it out.
+
+## Defining the finding model
+
+Before building `/ticket-agent`, I settled how agent findings are represented and enforced. I rejected a four-level severity ladder — the difference between "major" and "blocker" felt arbitrary. Instead, enforcement is binary: a finding is a **blocker** (fails the check) or **advisory** (informational). A developer can override a blocker, but only by giving reasons; the override and rationale are recorded on the finding and shown in the report, so overrides stay visible and auditable rather than silent. A component or pattern with no approval trail (`traceability: "none"`) is always a blocker.
+
+I set per-engine confidence thresholds — accessibility 0.90, UX pattern 0.75, convention 0.85 — because accessibility false alarms erode trust fastest, while pattern judgments are inherently more subjective. Below-threshold findings are still reported, flagged "needs review" and counted in the stats; dropping them entirely would hide where the engines are uncertain.
+
+I then wrote `prpd/commands/ticket-agent.md`, the second command. It loads the ADO ticket via MCP, reads the baseline and any prior ticket context, assesses implementation readiness (including the open states checklist and accessibility requirements), applies the missing-component rule — reusable needs pause for a guided design-system extension while genuinely feature-specific needs may get a recorded ticket-scoped exception — and persists findings and decisions to `tickets.json` so `/pr-agent` verifies rather than rediscovers.
+
+For PR reporting I confirmed the comment-based approach: one maintained summary comment with verdict and statistics, inline threads per finding at the file and line, and ADO's required comment-resolution branch policy as the merge gate. Overrides happen in the thread — the developer replies with reasons, which get recorded on the finding and in `tickets.json`, and the thread resolves as overridden rather than fixed. A required status check stays on the table for later if comment resolution proves too weak.
+
+I then wrote `prpd/commands/pr-agent.md`, the third command. It verifies the PR links to a reviewed ticket, checks that every new component or pattern traces to an approval, runs all three engines with their distinct perspectives, applies the confidence and blocker/advisory policy, consolidates findings through guardrails, and reports through the ADO comment model with rerun support.
+
+Mapping the Stage 4 certification criteria onto the project surfaced a gap: no audit trail. I added `.prpd/audit.jsonl`, an append-only event log maintained by `prpd.py`. Every helper call logs automatically, and agents emit structured events — questions, approvals, overrides, engine runs — tagged with workflow step and model/token/cost data. This gives the exam's required failure-to-origin tracing and per-step cost data, and doubles as punch-out evidence since every human approval point is recorded.
+
 ## Decisions still to make
 
 The following questions remain open:
-
-- What command invokes first-run initialization?
-- How will the system authenticate with and inspect Figma?
-- What schema and location will store the approved project profile?
-- How will the minimum-baseline criteria be represented as machine-checkable validation rules?
-- Beyond unapproved components and patterns, which findings should block a PR?
-- What output schema, severity levels, and confidence thresholds should the agents use?
 - How should overlapping findings be consolidated?
-- Which accessibility standard should the system enforce?
 - What fixture suite and measurable targets will define success?
