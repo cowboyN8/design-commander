@@ -23,7 +23,13 @@ traceable to its step in `.prpd/audit.jsonl`.
 
 1. Inspect `<repo>`: package manifest, file tree, existing tokens/components,
    Storybook or docs, README/contributing guidance, migration notes.
-2. Run `baseline new <repo-name>` if `.prpd/baseline.json` does not exist.
+2. Verify the build toolchain is actually wired up for the stack it implies —
+   a framework dependency in the manifest (e.g. `@vitejs/plugin-react`) is not
+   evidence it's registered in the build config (e.g. `vite.config.js`). Check
+   the config directly and fix or flag gaps now, before generating any layer
+   code on top of it. Catching this at Step 0 avoids a mid-layer runtime
+   failure with no clear cause.
+3. Run `baseline new <repo-name>` if `.prpd/baseline.json` does not exist.
    If it exists, read it and resume from its recorded state.
 
 ## Step 1 — Collect what you cannot assume
@@ -51,7 +57,9 @@ Determine each dimension from evidence, and record with `baseline set`:
 Figma inspection uses the **Figma MCP server**. If the MCP server or declared
 files are unreachable, record `unavailable`, not `absent`.
 
-Record every source in `sources[]` with its `authority` and `scope`.
+Record every source in `sources[]` with its `authority` and `scope`, one
+`baseline append sources '{...}'` call per source — never `baseline set
+sources`, which replaces the whole array.
 
 ## Step 3 — Reconcile sources
 
@@ -91,6 +99,11 @@ foundation and every component in all variants and relevant states (default,
 hover, disabled, loading, error), organized by layer order. Record the entry
 path as `library_page` in the baseline.
 
+Record each approved foundation with `baseline set foundations.<name> '{...}'`
+(an object keyed by name). Record each approved component with `baseline
+append components '{...}'` — `components` is an array, so use `append`, not
+`set`, or you will silently overwrite every component recorded so far.
+
 Rules:
 
 - If a partial system exists, preserve validated work; start at the missing
@@ -120,7 +133,7 @@ Set `outcome` via `baseline set`:
 
 - `ready` — baseline sufficiently covers expected work
 - `ready_with_gaps` — proceed, but named areas need ticket-time review
-  (record each in `gaps[]`)
+  (record each with `baseline append gaps '{...}'`)
 - `blocked` — insufficient authority or foundational consistency
 
 Run `baseline validate` and `check-files`. Report the outcome, the recorded

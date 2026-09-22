@@ -11,7 +11,8 @@ Usage:
 Commands:
     baseline new <repo-name>            Create a skeleton .prpd/baseline.json
     baseline validate                   Validate baseline.json against schema
-    baseline set <dot.path> <json-val>  Set a field in baseline.json
+    baseline set <dot.path> <json-val>  Set a field in baseline.json (replaces the whole value)
+    baseline append <dot.path> <json>   Append one item to an array field (e.g. components, sources, gaps)
     check-files                         Verify stack/component/token/library paths exist
     ticket get <ticket-id>              Print a ticket's recorded context
     ticket upsert <ticket-id>           Merge findings/decisions into tickets.json
@@ -150,6 +151,25 @@ def cmd_baseline_set(args, repo_dir: Path) -> None:
     ok(f"set {args.field} = {json.dumps(value)}")
 
 
+def cmd_baseline_append(args, repo_dir: Path) -> None:
+    path = prpd_dir(repo_dir) / "baseline.json"
+    data = load_json(path)
+    try:
+        value = json.loads(args.value)
+    except json.JSONDecodeError:
+        fail(f"--value is not valid JSON: {args.value!r}")
+    keys = args.field.split(".")
+    node = data
+    for key in keys[:-1]:
+        node = node.setdefault(key, {})
+    target = node.setdefault(keys[-1], [])
+    if not isinstance(target, list):
+        fail(f"{args.field} is not an array field")
+    target.append(value)
+    save_json(path, data)
+    ok(f"appended to {args.field} (now {len(target)} item(s))")
+
+
 # ---------------------------------------------------------------- checks
 
 def cmd_check_files(args, repo_dir: Path) -> None:
@@ -225,6 +245,7 @@ def main() -> None:
     parser.add_argument("--repo-dir", default=".", help="target repository root")
 
     common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--repo-dir", default=argparse.SUPPRESS, help="target repository root")
     common.add_argument("--step", help="workflow step emitting this call, e.g. init.layer.color")
     common.add_argument("--model", help="model identifier for audit entries")
     common.add_argument("--tokens-in", type=int, help="input tokens for audit entries")
@@ -250,6 +271,14 @@ def main() -> None:
     p_set.add_argument("field")
     p_set.add_argument("value")
     p_set.set_defaults(func=cmd_baseline_set)
+
+    p_append = base_sub.add_parser(
+        "append", parents=[common],
+        help="append a JSON object to an array field (dot path) in baseline.json, e.g. components, sources, gaps",
+    )
+    p_append.add_argument("field")
+    p_append.add_argument("value")
+    p_append.set_defaults(func=cmd_baseline_append)
 
     p_chk = sub.add_parser("check-files", parents=[common], help="verify recorded paths exist")
     p_chk.set_defaults(func=cmd_check_files)

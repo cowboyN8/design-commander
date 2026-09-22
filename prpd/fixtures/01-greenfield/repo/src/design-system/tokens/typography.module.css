@@ -1,0 +1,31 @@
+.heading-1 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-heading-1);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  margin: 0;
+}
+
+.heading-2 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-heading-2);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  margin: 0;
+}
+
+.body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.caption {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  margin: 0;
+}

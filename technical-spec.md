@@ -1,4 +1,4 @@
-# PR Pattern Detective — Technical Specification
+Its# PR Pattern Detective — Technical Specification
 
 ## 1. Document status
 
@@ -174,6 +174,8 @@ For each layer, it must:
 7. Continue to the next dependent layer.
 
 Before generating code, initialization must collect key implementation details from the user, including the target framework (for example, React) and styling approach. Generated decisions must not assume a stack that was not provided or detected.
+
+Initialization must also verify that the repository's build toolchain is actually wired up to run the chosen stack — for example, that a framework dependency declared in the package manifest (such as `@vitejs/plugin-react`) is registered in the build config (such as `vite.config.js`) — before generating layer code on top of it. A declared dependency is not evidence that the toolchain is configured; initialization must check the config itself and fix or flag gaps as part of Step 0 rather than surfacing them as a mid-layer runtime failure.
 
 Initialization writes approved layers directly into the repository rather than producing per-layer PRs or specs for later implementation. It must also produce a committed design-system library that renders the generated foundations and components so the user can review and test them visually.
 

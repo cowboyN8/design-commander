@@ -1,0 +1,10 @@
+@import "./typography.css";
+@import "./color.css";
+@import "./spacing.css";
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: var(--font-family-base);
+}

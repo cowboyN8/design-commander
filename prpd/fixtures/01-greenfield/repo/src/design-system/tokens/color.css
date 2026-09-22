@@ -1,0 +1,76 @@
+:root {
+  /* primary (blue) */
+  --color-primary-100: #DBEAFE;
+  --color-primary-200: #BFDBFE;
+  --color-primary-300: #93C5FD;
+  --color-primary-400: #60A5FA;
+  --color-primary-500: #3B82F6;
+  --color-primary-600: #2563EB;
+  --color-primary-700: #1D4ED8;
+  --color-primary-800: #1E40AF;
+  --color-primary-900: #1E3A8A;
+
+  /* neutral (gray) */
+  --color-neutral-100: #F3F4F6;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-500: #6B7280;
+  --color-neutral-600: #4B5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1F2937;
+  --color-neutral-900: #111827;
+
+  /* success (green) */
+  --color-success-100: #DCFCE7;
+  --color-success-200: #BBF7D0;
+  --color-success-300: #86EFAC;
+  --color-success-400: #4ADE80;
+  --color-success-500: #22C55E;
+  --color-success-600: #16A34A;
+  --color-success-700: #15803D;
+  --color-success-800: #166534;
+  --color-success-900: #14532D;
+
+  /* warning (amber) */
+  --color-warning-100: #FEF3C7;
+  --color-warning-200: #FDE68A;
+  --color-warning-300: #FCD34D;
+  --color-warning-400: #FBBF24;
+  --color-warning-500: #F59E0B;
+  --color-warning-600: #D97706;
+  --color-warning-700: #B45309;
+  --color-warning-800: #92400E;
+  --color-warning-900: #78350F;
+
+  /* danger (red) */
+  --color-danger-100: #FEE2E2;
+  --color-danger-200: #FECACA;
+  --color-danger-300: #FCA5A5;
+  --color-danger-400: #F87171;
+  --color-danger-500: #EF4444;
+  --color-danger-600: #DC2626;
+  --color-danger-700: #B91C1C;
+  --color-danger-800: #991B1B;
+  --color-danger-900: #7F1D1D;
+
+  /* semantic aliases */
+  --color-text: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-600);
+  --color-background: #FFFFFF;
+  --color-surface: var(--color-neutral-100);
+  --color-border: var(--color-neutral-300);
+
+  --color-primary: var(--color-primary-600);
+  --color-primary-hover: var(--color-primary-700);
+  --color-focus-ring: var(--color-primary-600);
+
+  /* status text uses the 700-step of each hue to hold WCAG 2.2 AA contrast on white */
+  --color-success-text: var(--color-success-700);
+  --color-warning-text: var(--color-warning-700);
+  --color-danger-text: var(--color-danger-700);
+
+  --color-success-surface: var(--color-success-100);
+  --color-warning-surface: var(--color-warning-100);
+  --color-danger-surface: var(--color-danger-100);
+}

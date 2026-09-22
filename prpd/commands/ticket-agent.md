@@ -54,13 +54,13 @@ guided design-system extension:
 3. Specify the addition with the user.
 4. Obtain approval.
 5. Implement and validate it (incremental — only the new work).
-6. Add it to `baseline.json` via `baseline set` with `status: "approved"`,
-   `source: "extension"`, and update the library page.
+6. Add it to `baseline.json` via `baseline append components '{...}'` with
+   `status: "approved"`, `source: "extension"`, and update the library page.
 
 **Feature-specific need** → a ticket-scoped exception may be approved. Record
-it in `baseline.json` `exceptions[]` with ticket, scope, rationale, date —
-including why existing patterns are insufficient, why a shared addition is
-inappropriate, and which approved foundations still apply.
+it via `baseline append exceptions '{...}'` with ticket, scope, rationale,
+date — including why existing patterns are insufficient, why a shared
+addition is inappropriate, and which approved foundations still apply.
 
 When reuse potential is uncertain, ask the user. Bias toward a shared
 extension when future reuse is reasonably likely.
