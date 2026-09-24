@@ -25,10 +25,26 @@ overrides, and the final verdict — with model/token data when known.
 4. Read `.prpd/baseline.json` for approved patterns, gaps, legacy areas,
    exceptions, and the accessibility target.
 5. If the PR was reviewed before, load prior findings and diff against them —
-   reruns update findings, they do not start over.
+   reruns update findings, they do not start over. Findings persist across
+   reruns and are never deleted; a fixed or overridden finding is marked via
+   `ticket resolve <ticket-id> <finding-id> --status fixed|overridden`
+   (`--reasons`/`--by` required for `overridden`), not removed from history.
 
 A draft PR is a valid target: running early gives the developer a correction
 loop before marking the PR ready.
+
+## Step 1b — Reconcile ticket-time blockers against the implementation
+
+Ticket-time blockers that depended on an approved decision rather than a
+built extension (e.g. "error state undefined" resolved by an approved
+decision, not by code at ticket time) stay `open` in `tickets.json` until
+someone verifies the implementation actually matches that decision — that
+verification is this stage's job, not the ticket stage's. Before running the
+engines, check every `open` blocker recorded on the linked ticket: if the
+diff implements the approved decision that resolves it, mark it with `ticket
+resolve <ticket-id> <finding-id> --status fixed`. Do not resolve a
+ticket-time blocker just because a decision was recorded — only once the
+code actually reflects it.
 
 ## Step 2 — Traceability check
 
@@ -86,11 +102,13 @@ Via ADO MCP comments:
    findings ordered by severity, overrides with their reasons, and stats
    (counts by engine/severity, low-confidence count).
 2. **Inline threads** at each finding's file and line. Active while unresolved.
-3. On rerun: resolve threads whose findings are fixed; resolve as *overridden*
-   when the developer replied with reasons (record `override` on the finding);
-   open threads for new findings.
+3. On rerun: `ticket resolve <ticket-id> <finding-id> --status fixed` for
+   findings no longer reproducible in the diff, resolving their thread; use
+   `--status overridden --reasons "..." --by "..."` when the developer
+   accepted the risk instead of fixing it. Open threads for new findings.
 4. Enforcement: unresolved blocker threads block completion under ADO's
    required comment-resolution policy.
 
-Verdict is **fail** while any blocker lacks a fix or recorded override;
-otherwise **pass**.
+Verdict is **fail** while any blocker finding has `status: open` (the
+default — absent a status, treat a finding as open); it is **pass** once
+every blocker is `fixed` or `overridden`.

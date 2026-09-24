@@ -9,7 +9,8 @@
         "description": "Ticket does not specify workflow behavior when the user list fails to load.",
         "suggested_fix": "Define an inline error state with retry, per user decision.",
         "confidence": 0.9,
-        "traceability": "none"
+        "traceability": "none",
+        "status": "fixed"
       },
       {
         "id": "ux_pattern-2",
@@ -19,7 +20,8 @@
         "description": "Ticket implies admin-only access but does not define non-admin behavior.",
         "suggested_fix": "Show a 403-style message for non-admins, per user decision.",
         "confidence": 0.88,
-        "traceability": "none"
+        "traceability": "none",
+        "status": "fixed"
       },
       {
         "id": "accessibility-1",
@@ -39,7 +41,170 @@
         "description": "Baseline has no Table component; this ticket needs one to render the user list.",
         "suggested_fix": "Add Table as a reusable design-system extension.",
         "confidence": 0.9,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "convention-2",
+        "engine": "convention",
+        "severity": "blocker",
+        "title": "Ad hoc StatusPill duplicates Badge; untraced",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            20,
+            31
+          ]
+        },
+        "description": "A new StatusPill component was invented for the status column instead of reusing the approved Badge component. No baseline entry, extension, or exception covers it.",
+        "suggested_fix": "Replace StatusPill with Badge (success/warning/neutral variants already match active/invited/disabled).",
+        "confidence": 0.93,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "convention-3",
+        "engine": "convention",
+        "severity": "blocker",
+        "title": "Hand-rolled error banner duplicates Table error/retry",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            86,
+            93
+          ]
+        },
+        "description": "A custom error div and retry button were written instead of using Table's approved error/onRetry props, which already implement this exact pattern and were specifically approved for this ticket.",
+        "suggested_fix": "Pass error and onRetry into Table instead of rendering a separate block.",
+        "confidence": 0.91,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "convention-4",
+        "engine": "convention",
+        "severity": "blocker",
+        "title": "Hardcoded hex colors instead of design tokens",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            22,
+            26,
+            89
+          ]
+        },
+        "description": "StatusPill and the error banner use raw hex values instead of the success/warning/text-secondary/danger-surface color tokens.",
+        "suggested_fix": "Use the established semantic color tokens.",
+        "confidence": 0.9,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "accessibility-2",
+        "engine": "accessibility",
+        "severity": "blocker",
+        "title": "Error banner not announced to assistive tech",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            86,
+            93
+          ]
+        },
+        "description": "The hand-rolled error div has no role=alert or live region, unlike Table's built-in error state. Screen reader users get no indication the load failed.",
+        "suggested_fix": "Use Table's error/onRetry props instead of a custom div.",
+        "confidence": 0.94,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "accessibility-3",
+        "engine": "accessibility",
+        "severity": "blocker",
+        "title": "Status color contrast likely fails WCAG 2.2 AA",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            22,
+            26
+          ]
+        },
+        "description": "StatusPill hardcodes the 600-step of success/warning instead of the semantic text tokens, which were deliberately pinned to the 700-step during the Color layer because 600 does not reliably pass 4.5:1 on white.",
+        "suggested_fix": "Use Badge, which already uses the correct semantic tokens.",
+        "confidence": 0.91,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "ux_pattern-3",
+        "engine": "ux_pattern",
+        "severity": "blocker",
+        "title": "Empty state acceptance criterion not implemented",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            9,
+            13
+          ]
+        },
+        "description": "The ticket explicitly requires an empty state, but MOCK_USERS is a fixed non-empty array with no code path that ever renders zero rows.",
+        "suggested_fix": "Add a scenario that reaches Table's existing emptyMessage state, the same way the load-error toggle already exercises the error state.",
+        "confidence": 0.87,
+        "traceability": "baseline",
+        "status": "fixed"
+      },
+      {
+        "id": "ux_pattern-4",
+        "engine": "ux_pattern",
+        "severity": "advisory",
+        "title": "StatusPill visually inconsistent with Badge across the app",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            20,
+            31
+          ]
+        },
+        "description": "Every other status/label rendering in the library uses the pill-shaped Badge; this page's dot+text style breaks visual consistency even though it conveys the same information.",
+        "suggested_fix": "Use Badge.",
+        "confidence": 0.8,
         "traceability": "none"
+      },
+      {
+        "id": "accessibility-4",
+        "engine": "accessibility",
+        "severity": "advisory",
+        "title": "Role switch not announced",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            71,
+            78
+          ]
+        },
+        "description": "Switching the View-as role fully replaces page content (table vs 403 message) without moving focus or announcing the change.",
+        "suggested_fix": "Consider moving focus to the new heading or an aria-live region on role change.",
+        "confidence": 0.6,
+        "traceability": "none",
+        "low_confidence": true
+      },
+      {
+        "id": "convention-5",
+        "engine": "convention",
+        "severity": "advisory",
+        "title": "Demo/dev-only controls shipped in production component",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            104,
+            122
+          ]
+        },
+        "description": "View-as and Simulate-load-error controls are fixture/test scaffolding mixed directly into the shipped page component, not gated behind any dev-only flag.",
+        "suggested_fix": "Move to Storybook/the design-system library or gate behind an environment check before merging.",
+        "confidence": 0.8,
+        "traceability": "baseline",
+        "low_confidence": true
       }
     ],
     "approved_decisions": [
@@ -47,6 +212,6 @@
       "Permission handling: non-admins see a 403-style message rather than the table.",
       "Table approved as a shared design-system extension (not a ticket-scoped exception) given likely reuse across future list screens."
     ],
-    "updated_at": "2026-09-24T16:47:50.659886+00:00"
+    "updated_at": "2026-09-24T18:26:50.565702+00:00"
   }
 }

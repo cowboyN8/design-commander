@@ -1,3 +1,5 @@
+import { ManageUsersPage } from "./features/manage-users/ManageUsersPage";
+
 export default function App() {
-  return <main>Hello</main>;
+  return <ManageUsersPage />;
 }

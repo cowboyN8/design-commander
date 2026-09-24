@@ -212,6 +212,7 @@ COVERED_BEHAVIORS = {
     "adds the extension to baseline.json components with source referencing the ticket": "extension approved and present in baseline",
     "persists findings and decisions via ticket upsert (schema-valid)": "ticket recorded in tickets.json",
     "ticket validate passes at end of run": "ticket validate",
+    "verdict is fail while any blocker is open, pass once every blocker is fixed or overridden": "verdict matches expected (final)",
 }
 
 
@@ -233,6 +234,39 @@ def score_ticket_fixture(fixture_dir: Path, fixture: dict):
     return results
 
 
+def check_pr_verdict(repo_dir: Path, ticket_id: str, expected_verdict: str) -> Result:
+    tickets_path = repo_dir / ".prpd" / "tickets.json"
+    if not tickets_path.is_file():
+        return Result("verdict matches expected (final)", False, f"{tickets_path} does not exist")
+    tickets = load_json(tickets_path)
+    record = tickets.get(ticket_id)
+    if record is None:
+        return Result("verdict matches expected (final)", False, f"no context recorded for {ticket_id}")
+    open_blockers = [
+        f for f in record.get("findings", [])
+        if isinstance(f, dict) and f.get("severity") == "blocker" and f.get("status", "open") == "open"
+    ]
+    verdict = "fail" if open_blockers else "pass"
+    ok_ = verdict == expected_verdict
+    detail = "" if ok_ else f"expected {expected_verdict}, computed {verdict} ({len(open_blockers)} open blocker(s): {[f.get('id') for f in open_blockers]})"
+    return Result("verdict matches expected (final)", ok_, detail)
+
+
+def score_pr_fixture(fixture_dir: Path, fixture: dict):
+    target = fixture.get("target_repo")
+    if not target:
+        return [Result("target_repo resolves", False, "fixture.json has no target_repo")]
+    repo_dir = (fixture_dir / target).resolve()
+    if not repo_dir.is_dir():
+        return [Result("target_repo resolves", False, f"{repo_dir} does not exist")]
+
+    ticket_id = fixture.get("ticket_id")
+    expected = fixture.get("expected", {})
+    results = [check_ticket_validate(repo_dir), check_baseline_validate(repo_dir), check_files(repo_dir)]
+    results.append(check_pr_verdict(repo_dir, ticket_id, expected.get("final_verdict", "pass")))
+    return results
+
+
 def score_fixture(fixture_dir: Path):
     fixture_path = fixture_dir / "fixture.json"
     fixture = load_json(fixture_path)
@@ -242,6 +276,8 @@ def score_fixture(fixture_dir: Path):
         results = score_init_fixture(fixture_dir, fixture)
     elif stage == "ticket":
         results = score_ticket_fixture(fixture_dir, fixture)
+    elif stage == "pr":
+        results = score_pr_fixture(fixture_dir, fixture)
     else:
         results = [Result(f"stage '{stage}' scoring", False, "no mechanical checks implemented for this stage yet")]
 

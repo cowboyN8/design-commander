@@ -18,6 +18,9 @@ Commands:
     ticket get <ticket-id>              Print a ticket's recorded context (no error if none yet)
     ticket upsert <ticket-id>           Merge findings/decisions into tickets.json
                                         (--finding "..." / --decision "...", repeatable)
+    ticket resolve <ticket-id> <finding-id> --status fixed|overridden
+                                        Mark an existing finding fixed/overridden on rerun
+                                        (--reasons/--by required for overridden)
 """
 
 import argparse
@@ -266,6 +269,32 @@ def cmd_ticket_upsert(args, repo_dir: Path) -> None:
 
 # ---------------------------------------------------------------- cli
 
+def cmd_ticket_resolve(args, repo_dir: Path) -> None:
+    """Mark an existing finding as fixed or overridden (never delete history)."""
+    path = prpd_dir(repo_dir) / "tickets.json"
+    tickets = load_json(path)
+    record = tickets.get(args.ticket_id)
+    if record is None:
+        fail(f"no context recorded for {args.ticket_id}")
+
+    match = None
+    for finding in record.get("findings", []):
+        if isinstance(finding, dict) and finding.get("id") == args.finding_id:
+            match = finding
+            break
+    if match is None:
+        fail(f"no finding {args.finding_id!r} recorded for {args.ticket_id}")
+
+    if args.status == "overridden":
+        if not args.reasons or not args.by:
+            fail("--reasons and --by are required to record an override")
+        match["override"] = {"reasons": args.reasons, "by": args.by, "at": now_iso()}
+    match["status"] = args.status
+    record["updated_at"] = now_iso()
+    save_json(path, tickets)
+    ok(f"{args.ticket_id} finding {args.finding_id} marked {args.status}")
+
+
 def cmd_audit(args, repo_dir: Path) -> None:
     audit(repo_dir, {
         "kind": "agent_event",
@@ -336,6 +365,17 @@ def main() -> None:
     p_tup.add_argument("--finding-json", action="append", help="finding object as JSON")
     p_tup.add_argument("--decision", action="append")
     p_tup.set_defaults(func=cmd_ticket_upsert)
+
+    p_tres = tick_sub.add_parser(
+        "resolve", parents=[common],
+        help="mark an existing finding fixed or overridden (rerun workflow; never deletes history)",
+    )
+    p_tres.add_argument("ticket_id")
+    p_tres.add_argument("finding_id")
+    p_tres.add_argument("--status", choices=["fixed", "overridden"], required=True)
+    p_tres.add_argument("--reasons", help="required when --status overridden")
+    p_tres.add_argument("--by", help="required when --status overridden")
+    p_tres.set_defaults(func=cmd_ticket_resolve)
 
     p_audit = sub.add_parser("audit", parents=[common], help="emit an audit event to audit.jsonl")
     p_audit.add_argument("event", help="event name, e.g. layer_approved, question_asked")

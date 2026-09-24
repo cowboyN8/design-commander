@@ -58,6 +58,11 @@ guided design-system extension:
 5. Implement and validate it (incremental — only the new work).
 6. Add it to `baseline.json` via `baseline append components '{...}'` with
    `status: "approved"`, `source: "extension"`, and update the library page.
+7. Resolve the finding that identified this gap: `ticket resolve
+   <ticket-number> <finding-id> --status fixed`. Do this immediately once the
+   extension is implemented and validated — a blocker whose fix already
+   landed must not sit `open` indefinitely, since `/pr-agent`'s verdict
+   depends on it.
 
 **Feature-specific need** → a ticket-scoped exception may be approved. Record
 it via `baseline append exceptions '{...}'` with ticket, scope, rationale,

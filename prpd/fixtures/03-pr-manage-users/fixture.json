@@ -1,0 +1,35 @@
+{
+  "id": "03-pr-manage-users",
+  "stage": "pr",
+  "description": "PR implementing TICKET-101 (Manage Users) against the 01-greenfield baseline. Simulates an ADO PR fetch (no live PR exists). Deliberately introduced two traceability/convention violations (an untraced StatusPill instead of reusing Badge, and a hand-rolled error banner instead of Table's approved error/onRetry props) plus two organically-discovered gaps (unimplemented empty-state acceptance criterion, hardcoded colors reintroducing a contrast failure) to prove /pr-agent's engines and traceability check actually catch problems, then fixed them and reran to confirm the verdict flips from fail to pass and ticket-time blockers get reconciled against the real implementation.",
+  "target_repo": "../01-greenfield/repo",
+  "ticket_id": "TICKET-101",
+  "pr": {
+    "id": "PR-55",
+    "title": "Implement Manage Users screen (closes TICKET-101)",
+    "changed_files": [
+      "src/App.jsx",
+      "src/features/manage-users/ManageUsersPage.jsx"
+    ]
+  },
+  "expected": {
+    "first_pass_verdict": "fail",
+    "first_pass_blocker_ids": [
+      "convention-2", "convention-3", "convention-4",
+      "accessibility-2", "accessibility-3", "ux_pattern-3"
+    ],
+    "final_verdict": "pass",
+    "behaviors": [
+      "flags PR components with no baseline/extension/exception trail as blockers, not just style nits",
+      "runs all three engines and keeps overlapping findings from different engines distinct rather than silently merging them",
+      "applies confidence thresholds per engine and marks below-threshold findings low_confidence without blocking",
+      "reconciles ticket-time blockers against the actual implementation on PR review, not just new diff findings",
+      "resolves fixed findings via ticket resolve rather than deleting or silently forgetting them",
+      "ticket validate passes at end of run",
+      "verdict is fail while any blocker is open, pass once every blocker is fixed or overridden"
+    ]
+  },
+  "user_simulation": {
+    "notes": "No live ADO PR exists; PR content and diff were authored directly in the fixture repo and reviewed in place."
+  }
+}

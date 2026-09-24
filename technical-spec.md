@@ -462,6 +462,7 @@ Every engine emits findings with this schema:
   "confidence": 0.0,
   "traceability": "baseline | extension | exception | none",
   "low_confidence": false,
+  "status": "open | fixed | overridden",
   "override": null
 }
 ```
@@ -472,6 +473,8 @@ Enforcement is binary:
 - `advisory` findings are informational and never block.
 - Any finding with `traceability: "none"` (a component or pattern with no approval trail) must be a blocker.
 - A developer may override a blocker by providing reasons. The override must be recorded as `{"reasons": "...", "by": "...", "at": "<timestamp>"}` on the finding and surfaced in the report. The finding text must be clear enough that a reviewer can evaluate the override rationale.
+
+Findings are append-only and must never be deleted, including once fixed or superseded — `status` records their current resolution state (default `open` when absent) so history stays intact while enforcement only counts currently-open blockers. A ticket-time blocker that was resolved through an approved decision (not a built extension) must stay `open` until `/pr-agent` verifies the implementation actually reflects that decision — recording a decision is not the same as implementing it, and only the later stage can confirm the code matches.
 
 Confidence thresholds by engine:
 
@@ -540,9 +543,9 @@ PR findings are reported through Azure DevOps pull-request comments via the ADO 
 
 - One maintained **summary comment** per PR contains the complete report — verdict (fail/pass), all findings ordered blockers → advisory → needs-review, overrides, and finding statistics.
 - Each finding tied to specific code gets an **inline thread** at its file and line. Threads stay active while unresolved.
-- A developer overrides a blocker by replying in its thread with reasons; the override is recorded on the finding and in `tickets.json`, and the thread is resolved as overridden rather than fixed.
+- A developer overrides a blocker by replying in its thread with reasons; the override is recorded on the finding (`status: "overridden"` plus the `override` object) and in `tickets.json`, and the thread is resolved as overridden rather than fixed.
 - Enforcement relies on ADO's required comment-resolution branch policy: unresolved blocker threads prevent completion.
-- Rerunning `/pr-agent` must update the summary comment, resolve threads for findings that are fixed or overridden, and open threads for new findings.
+- Rerunning `/pr-agent` must update the summary comment, mark findings `fixed`/`overridden` (never delete them) via `prpd.py ticket resolve`, resolve their threads, and open threads for new findings. Verdict is `fail` while any blocker's `status` is `open` (the default), `pass` once every blocker is `fixed` or `overridden`.
 - A required external PR status check may be added later if comment resolution proves insufficiently enforceable.
 
 ## 9. Guardrails
@@ -555,7 +558,7 @@ Guardrails must:
 - Deduplicate or combine overlapping findings
 - Preserve which review perspective produced each underlying issue
 
-Guardrails must apply the per-engine confidence thresholds and the blocker/advisory enforcement model defined in §7.4, including override recording. Deduplication and merge rules for overlapping findings are **Open**.
+Guardrails must apply the per-engine confidence thresholds and the blocker/advisory enforcement model defined in §7.4, including override recording. Deduplication and merge rules for overlapping findings are **Open**; a concrete observed case exists (`PR-55` in `prpd/fixtures/03-pr-manage-users/`, where the same ad hoc component was flagged separately by the convention engine as untraced and by the ux_pattern engine as visually inconsistent) and should inform whatever rule is decided rather than being resolved arbitrarily in the meantime — findings are kept distinct, not merged, until this is resolved.
 
 ## 10. Test runner
 
@@ -577,7 +580,7 @@ A fixture is a directory containing:
 - `repo/` (init fixtures) — a repository in the state the fixture is meant to exercise; for `init` fixtures, this is the completed, committed result of a run. Ticket/PR-stage fixtures instead reference an existing init fixture's repo via `target_repo`, since ticket and PR review operate on a repo that already has a baseline rather than a fresh scaffold.
 - `fixture.json` — `id`, `stage`, a human `description`, an `expected` block (stage-specific: `dimensions`/`outcome` for `init`, `readiness_verdict`/`extension_approved` for `ticket`, etc., plus free-text `behaviors` describing expected process), and, for stages that require simulated input, a `user_simulation` block recording the answers a user would give and (for `ticket`/`pr` stages) a `ticket`/`pr` block simulating the fetched work item, since there is no live ADO integration in these fixtures.
 
-This format is proven by `prpd/fixtures/01-greenfield/` (init) and `prpd/fixtures/02-ticket-new-page/` (ticket — the first fixture to exercise `/ticket-agent`'s reuse-vs-exception extension workflow end to end).
+This format is proven by `prpd/fixtures/01-greenfield/` (init), `prpd/fixtures/02-ticket-new-page/` (ticket — the first fixture to exercise `/ticket-agent`'s reuse-vs-exception extension workflow end to end), and `prpd/fixtures/03-pr-manage-users/` (pr — the first fixture to exercise `/pr-agent`'s traceability check, all three engines, and the fail-then-fix-then-pass rerun loop end to end).
 
 ### 10.2 Test runner v1 (mechanical checker)
 
@@ -596,6 +599,11 @@ For `ticket` fixtures:
 - `ticket validate`, `baseline validate`, and `check-files` all pass
 - the ticket ID has recorded findings and approved decisions in `tickets.json`
 - any `expected.extension_approved` component is present in the baseline as `approved` with an existing file
+
+For `pr` fixtures:
+
+- `ticket validate`, `baseline validate`, and `check-files` all pass
+- the verdict computed from the linked ticket's findings (`fail` if any blocker has `status: open`, `pass` otherwise) matches `expected.final_verdict`
 
 It exits non-zero if any check fails, and separately lists which `expected.behaviors` entries it does **not** cover, since those describe process during a run (e.g. "asks stack questions before generating code") rather than the finished repo state, and cannot be verified from artifacts alone.
 
