@@ -18,6 +18,9 @@
       "convention-2", "convention-3", "convention-4",
       "accessibility-2", "accessibility-3", "ux_pattern-3"
     ],
+    "second_pass_verdict": "fail",
+    "second_pass_new_blocker_id": "convention-6",
+    "override_finding_id": "convention-6",
     "final_verdict": "pass",
     "behaviors": [
       "flags PR components with no baseline/extension/exception trail as blockers, not just style nits",
@@ -25,6 +28,7 @@
       "applies confidence thresholds per engine and marks below-threshold findings low_confidence without blocking",
       "reconciles ticket-time blockers against the actual implementation on PR review, not just new diff findings",
       "resolves fixed findings via ticket resolve rather than deleting or silently forgetting them",
+      "records a developer override with reasons/by/at rather than silently dropping the blocker",
       "ticket validate passes at end of run",
       "verdict is fail while any blocker is open, pass once every blocker is fixed or overridden"
     ]

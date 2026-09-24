@@ -213,6 +213,7 @@ COVERED_BEHAVIORS = {
     "persists findings and decisions via ticket upsert (schema-valid)": "ticket recorded in tickets.json",
     "ticket validate passes at end of run": "ticket validate",
     "verdict is fail while any blocker is open, pass once every blocker is fixed or overridden": "verdict matches expected (final)",
+    "records a developer override with reasons/by/at rather than silently dropping the blocker": "override recorded for convention-6",
 }
 
 
@@ -252,6 +253,26 @@ def check_pr_verdict(repo_dir: Path, ticket_id: str, expected_verdict: str) -> R
     return Result("verdict matches expected (final)", ok_, detail)
 
 
+def check_override_recorded(repo_dir: Path, ticket_id: str, finding_id: str) -> Result:
+    tickets_path = repo_dir / ".prpd" / "tickets.json"
+    tickets = load_json(tickets_path)
+    record = tickets.get(ticket_id, {})
+    finding = next((f for f in record.get("findings", []) if isinstance(f, dict) and f.get("id") == finding_id), None)
+    if finding is None:
+        return Result(f"override recorded for {finding_id}", False, f"finding {finding_id} not found")
+    override = finding.get("override")
+    ok_ = (
+        finding.get("status") == "overridden"
+        and isinstance(override, dict)
+        and all(override.get(k) for k in ("reasons", "by", "at"))
+    )
+    return Result(
+        f"override recorded for {finding_id}",
+        bool(ok_),
+        "" if ok_ else f"status={finding.get('status')!r}, override={override!r}",
+    )
+
+
 def score_pr_fixture(fixture_dir: Path, fixture: dict):
     target = fixture.get("target_repo")
     if not target:
@@ -264,6 +285,9 @@ def score_pr_fixture(fixture_dir: Path, fixture: dict):
     expected = fixture.get("expected", {})
     results = [check_ticket_validate(repo_dir), check_baseline_validate(repo_dir), check_files(repo_dir)]
     results.append(check_pr_verdict(repo_dir, ticket_id, expected.get("final_verdict", "pass")))
+    override_id = expected.get("override_finding_id")
+    if override_id:
+        results.append(check_override_recorded(repo_dir, ticket_id, override_id))
     return results
 
 

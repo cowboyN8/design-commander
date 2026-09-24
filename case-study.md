@@ -403,6 +403,12 @@ I extended `run_fixture.py` and the fixture format to cover the `pr` stage (`prp
 
 That's all three lifecycle stages run for real now, not just written: 8 real bugs and gaps found and fixed across the three walkthroughs (2 in init, 2 in ticket, 2 in PR mechanics, 1 in engine attribution, 1 in the ticket/PR resolution split), each one something a read-through of the prompts would not have caught.
 
+## Testing the override flow
+
+The one remaining untested corner of `/pr-agent`: a developer accepting a blocker's risk instead of fixing it. All six original blockers had been fixed, so there was nothing left to override — I added one more realistic finding (DevControls using inline styles instead of CSS Modules) specifically to have something to override rather than fix, since "temporary QA-only scaffolding, tracked for removal in a follow-up ticket" is a believable real reason a developer would give instead of doing the work.
+
+`ticket resolve ... --status overridden --reasons ... --by ...` worked exactly as built: it recorded the reasons/who/when on the finding, and the same verdict logic already written for the "fixed" case (§8.5: fail while any blocker is `open`, pass once every blocker is `fixed` or `overridden`) correctly treated the override as resolving the block without any new code — a good sign the earlier `status` design was the right shape, not something that only happened to work for one case. Extended `run_fixture.py` and `03-pr-manage-users/fixture.json` to check the override is actually recorded with all three required fields, and confirmed it discriminates (stripping the `override` object fails the check, restoring it passes).
+
 ## Decisions still to make
 
 The following questions remain open:

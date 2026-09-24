@@ -205,6 +205,29 @@
         "confidence": 0.8,
         "traceability": "baseline",
         "low_confidence": true
+      },
+      {
+        "id": "convention-6",
+        "engine": "convention",
+        "severity": "blocker",
+        "title": "DevControls uses inline styles instead of CSS Modules",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            104,
+            122
+          ]
+        },
+        "description": "DevControls hardcodes inline style objects for layout instead of following the CSS Modules convention used by every approved design-system component.",
+        "suggested_fix": "Move DevControls layout into a CSS Modules stylesheet consistent with the rest of the design system.",
+        "confidence": 0.87,
+        "traceability": "none",
+        "override": {
+          "reasons": "DevControls is temporary QA-only scaffolding that will be deleted before this feature ships to production (tracked in a follow-up ticket); not worth converting to CSS Modules now.",
+          "by": "nate",
+          "at": "2026-09-24T18:57:25.251804+00:00"
+        },
+        "status": "overridden"
       }
     ],
     "approved_decisions": [
@@ -212,6 +235,6 @@
       "Permission handling: non-admins see a 403-style message rather than the table.",
       "Table approved as a shared design-system extension (not a ticket-scoped exception) given likely reuse across future list screens."
     ],
-    "updated_at": "2026-09-24T18:26:50.565702+00:00"
+    "updated_at": "2026-09-24T18:57:25.252152+00:00"
   }
 }

@@ -136,3 +136,30 @@
 {"ts": "2026-09-24T18:29:40.022773+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-24T18:29:40.141459+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-24T18:29:40.205951+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:54:16.814575+00:00", "kind": "helper_call", "command": "ticket upsert", "step": "pr.rerun2", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:54:16.851681+00:00", "kind": "agent_event", "event": "engine_run", "step": "pr.rerun2", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "note": "Follow-up review pass on PR-55 found one new blocker: DevControls inline styles vs CSS Modules convention"}
+{"ts": "2026-09-24T18:54:16.852028+00:00", "kind": "helper_call", "command": "audit", "step": "pr.rerun2", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:54:24.064090+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:54:24.094164+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:54:24.123449+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:57:25.252745+00:00", "kind": "helper_call", "command": "ticket resolve", "step": "pr.rerun2", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:57:25.292020+00:00", "kind": "helper_call", "command": "ticket validate", "step": "pr.rerun2", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:57:32.495925+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:57:32.528572+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:57:32.559525+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:57:41.272576+00:00", "kind": "agent_event", "event": "outcome_recorded", "step": "pr.report", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "note": "PR-55 verdict: pass (1 override recorded for convention-6, 0 open blockers)"}
+{"ts": "2026-09-24T18:57:41.274014+00:00", "kind": "helper_call", "command": "audit", "step": "pr.report", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:13.728707+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:13.767712+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:14.933759+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:14.963001+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:14.992398+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:15.023570+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:15.054608+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T18:58:15.084272+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:02:14.133174+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:02:14.166041+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:02:14.196690+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:02:14.274203+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:02:14.315277+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:02:14.350211+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
