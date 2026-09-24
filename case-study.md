@@ -360,8 +360,22 @@ Layer 7 — large components and page-level patterns — became the first real t
 
 The completed run: three foundation layers and eight components (Text, Button, Badge, TextInput, Select, Checkbox, Card, Modal) approved and validated, one gap honestly recorded, `outcome: ready_with_gaps`, `baseline validate` and `check-files` both passing, and the app still builds (`npm run build`) after every layer. This is the first fixture to make it through the full `/init-agent` workflow end to end, and it did so with three real implementation bugs found and fixed along the way rather than zero — which is exactly the value of running it instead of just writing it.
 
+## Building the first test runner
+
+After finishing the `01-greenfield` walkthrough, I got worried about project speed: getting one command through one easy fixture took an entire long session of manual chat approval, and surfaced three tool bugs along the way. Doing that same manual process for `/ticket-agent` and `/pr-agent` would cost similarly, and worse, there was no way to tell later if a change to `prpd.py` or a schema silently broke the `01-greenfield` result I'd already validated by hand.
+
+Rather than jumping straight to automating an entire agent run (which would mean deciding how a fixture's `user_simulation` answers get fed to an agent unattended — a real open question, not a small one), I chose to build the cheapest thing that would stop me from re-verifying by eye: a mechanical checker that scores a fixture's *already-completed* repo against its `fixture.json` expectations. This doesn't run an agent or simulate a user at all — it just checks the finished artifacts the way I was already checking them by hand (schema validity, file existence, recorded dimensions/outcome, build success), and prints pass/fail instead of me eyeballing it.
+
+I deliberately kept it honest about its own limits: several of `fixture.json`'s `expected.behaviors` entries describe *process* during a run ("asks stack questions before generating code", "requires user approval per layer") rather than the finished repo state, and can't be verified from artifacts alone. The tool prints those separately as "not mechanically checked" rather than silently claiming coverage it doesn't have. Three of the seven behavior entries turned out to already be covered indirectly by the artifact checks (library page existing, baseline validating, check-files passing), so I mapped those out of the "unverified" list rather than under- or over-claiming coverage.
+
+I proved the tool actually discriminates, rather than just always printing PASS, by deliberately corrupting `01-greenfield`'s recorded `outcome` through the existing `prpd.py` helper, confirming the runner failed loudly with a clear diff, then restoring it and confirming it passed again. While building this I also found and removed a few stray `audit.jsonl` entries (tagged `step: "test"`) left over from earlier CLI debugging that had been committed as if they were part of the real run — a small but real reminder that the audit log needs the same scrutiny as any other artifact.
+
+This resolves the fixture-format half of the previously open "fixture format and measurable success criteria" decision: the format is the `expected`/`user_simulation` structure already proven by `01-greenfield`, and v1 success criteria are the eight mechanical checks in `prpd/tools/run_fixture.py`. What's still open is scored below.
+
 ## Decisions still to make
 
 The following questions remain open:
 - How should overlapping findings be consolidated?
-- What fixture suite and measurable targets will define success?
+- What accuracy/false-positive targets should the test runner hold agents to?
+- How should process-level fixture `behaviors` (not just end-state artifacts) be verified — mechanically, or by another LLM pass judging a transcript?
+- How should an automated, unattended fixture run work — i.e., how does a fixture's `user_simulation` block get fed to an agent without a human approving each step? Everything here runs locally in Devin, so this doesn't need external orchestration, but the approach itself isn't decided.

@@ -568,7 +568,32 @@ The fixture suite must eventually include:
 - Approved exceptions
 - Legacy and migration scenarios
 
-Accuracy targets, false-positive targets, fixture format, and completion criteria are **Open**.
+### 10.1 Fixture format
+
+A fixture is a directory containing:
+
+- `repo/` — a repository in the state the fixture is meant to exercise (for `init` fixtures, this is the completed, committed result of a run).
+- `fixture.json` — `id`, `stage`, a human `description`, an `expected` block (`dimensions`, `outcome` as an allowed set, and free-text `behaviors` describing expected process), and, for stages that require simulated input, a `user_simulation` block recording the answers a user would give.
+
+This format is proven by `prpd/fixtures/01-greenfield/`, the first fixture built and scored end to end.
+
+### 10.2 Test runner v1 (mechanical checker)
+
+`prpd/tools/run_fixture.py` is a deterministic, dependency-free script (`python3 prpd/tools/run_fixture.py --all` or `<fixture-dir>`) that scores a fixture's `repo/` against its `fixture.json` `expected` block using only end-state, code-verifiable checks:
+
+- `baseline validate` and `check-files` both pass
+- recorded `dimensions` exactly match `expected.dimensions`
+- recorded `outcome` is a member of `expected.outcome`
+- `library_page` is recorded and the file exists
+- every `approved` component/foundation's recorded path exists
+- the repo's build succeeds (skipped, not silently passed, if dependencies are not installed)
+- `.prpd/audit.jsonl` is well-formed and contains the fixture stage's minimum required step tags
+
+It exits non-zero if any check fails, and separately lists which `expected.behaviors` entries it does **not** cover, since those describe process during a run (e.g. "asks stack questions before generating code") rather than the finished repo state, and cannot be verified from artifacts alone.
+
+This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user. Whether and how to add an automated, unattended run (an agent executing a command against a fixture using its `user_simulation` block, without a human approving each step) is still **Open** — everything in this system runs locally, so this would not require external orchestration, but the approach for scripting the simulated-user side is undecided.
+
+Remaining open items: accuracy/false-positive targets, mechanical or LLM-assisted verification of process-level `behaviors`, and the automated-run approach above.
 
 ## 11. Audit trail
 
@@ -582,4 +607,6 @@ Every workflow step must be traceable. The system must maintain `.prpd/audit.jso
 ## 12. Open technical decisions
 
 - Deduplication and disagreement policy
-- Fixture format and measurable success criteria
+- Accuracy/false-positive targets for the test runner
+- Mechanical or LLM-assisted verification of process-level fixture `behaviors`
+- Whether/how to script an automated, unattended agent run against a fixture's `user_simulation` block

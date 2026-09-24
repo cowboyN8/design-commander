@@ -19,8 +19,6 @@
 {"ts": "2026-09-22T18:10:04.370917+00:00", "kind": "helper_call", "command": "audit", "step": "init.layer.spacing", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-22T18:12:01.593786+00:00", "kind": "helper_call", "command": "ticket get", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "fail"}
 {"ts": "2026-09-22T18:12:39.391917+00:00", "kind": "helper_call", "command": "baseline set", "step": "init.layer.small", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
-{"ts": "2026-09-22T18:14:18.148738+00:00", "kind": "helper_call", "command": "baseline append", "step": "test", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
-{"ts": "2026-09-22T18:14:18.258521+00:00", "kind": "helper_call", "command": "baseline set", "step": "test", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-22T18:15:50.625011+00:00", "kind": "helper_call", "command": "baseline validate", "step": "init.verify", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-22T18:15:50.664811+00:00", "kind": "helper_call", "command": "check-files", "step": "init.verify", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-22T18:15:58.937719+00:00", "kind": "agent_event", "event": "layer_approved", "step": "init.layer.small", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "note": "Button and Badge implemented and visually validated in library.html"}
@@ -40,3 +38,15 @@
 {"ts": "2026-09-22T18:24:35.477364+00:00", "kind": "helper_call", "command": "check-files", "step": "init.verify", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-22T18:24:55.386622+00:00", "kind": "agent_event", "event": "outcome_recorded", "step": "init.verify", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "note": "outcome=ready_with_gaps; foundations: typography, color, spacing approved; components: Text, Button, Badge, TextInput, Select, Checkbox, Card, Modal approved; gap: large_components_and_page_patterns (no real product area yet)"}
 {"ts": "2026-09-22T18:24:55.387059+00:00", "kind": "helper_call", "command": "audit", "step": "init.verify", "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:10:34.397028+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:10:34.437460+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:10:52.469210+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:10:52.497497+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:11:29.295435+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:11:29.326132+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:11:37.852496+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:11:37.886238+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:11:55.653206+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:11:55.687165+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:12:48.210873+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T16:12:48.239506+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
