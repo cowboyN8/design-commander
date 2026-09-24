@@ -433,6 +433,10 @@ You brought me a concrete certification rubric (five required artifacts: Workflo
 
 All 4 fixtures still pass `run_fixture.py --all` after every change in this phase, now including checks for gate files and punch-out records — so the certification work is itself covered by the same regression net as everything else, not a special exception.
 
+**End-to-End Success Rate** (`SUCCESS_RATE.md`): the rubric was explicit that per-step accuracy isn't the ask — it wants one number measured across the *entire* pipeline, and says plainly that not knowing it means not having reached this bar. I defined the unit of measurement as a **chain** (`prpd/fixtures/chains.json`): init → ticket → PR fixtures that operate on the same repo, where the chain only counts as passing if every fixture in it currently does — one broken link fails the whole thing rather than being averaged away. Right now there's exactly one complete chain (`01-greenfield` → `02-ticket-new-page` → `03-pr-manage-users`), and `04-existing-inconsistent` is correctly excluded from the number since it's init-only with no ticket/PR built on top of it yet — folding it in would have inflated the denominator dishonestly.
+
+I verified the mechanism actually measures the pipeline rather than just echoing individual fixture results: deliberately setting `01-greenfield`'s outcome back to `blocked` (simulating an init regression) correctly dropped the reported end-to-end rate to 0%, and restoring it correctly returned it to 100%. I was careful in the doc not to overstate what "100%" currently means — it's one chain, checked once per invocation, not a statistical accuracy claim across repeated trials, and I said so directly rather than let the number imply more confidence than the sample size supports. The trend log (`prpd/fixtures/results.jsonl`, via `run_fixture.py --report`) will accumulate real data honestly from here as future sessions rerun it, rather than being backfilled with fabricated historical timestamps to make the trend look more established than it is.
+
 ## Decisions still to make
 
 The following questions remain open:

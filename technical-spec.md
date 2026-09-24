@@ -598,7 +598,11 @@ A fixture is a directory containing:
 
 This format is proven by `prpd/fixtures/01-greenfield/` (init), `prpd/fixtures/02-ticket-new-page/` (ticket — the first fixture to exercise `/ticket-agent`'s reuse-vs-exception extension workflow end to end), `prpd/fixtures/03-pr-manage-users/` (pr — the first fixture to exercise `/pr-agent`'s traceability check, all three engines, and the fail-then-fix-then-pass rerun loop end to end), and `prpd/fixtures/04-existing-inconsistent/` (init — the first fixture to exercise dimension classification away from the greenfield defaults and §5.5's source-conflict reconciliation, using a simulated Figma MCP export the same way ticket/PR fixtures simulate ADO content).
 
-### 10.2 Test runner v1 (mechanical checker)
+### 10.2 End-to-end success rate
+
+Per-fixture pass/fail is not sufficient; the system must report a success rate measured over **chains** — a defined sequence of fixtures where init → ticket → PR operate on the same repo (`prpd/fixtures/chains.json`). A chain counts as passing only if every fixture in it currently passes; one broken link fails the whole chain rather than being averaged away by unrelated passing fixtures. `run_fixture.py --all` computes this automatically and appends a timestamped record to `prpd/fixtures/results.jsonl`; `run_fixture.py --report` prints the resulting trend. Fixtures not yet part of a complete chain (e.g. an init-only scenario with no ticket/PR built on top of it) must be reported separately, not folded into the end-to-end number. Full methodology and current honest limitations (sample size, what this number does and does not claim): `SUCCESS_RATE.md`.
+
+### 10.3 Test runner v1 (mechanical checker)
 
 `prpd/tools/run_fixture.py` is a deterministic, dependency-free script (`python3 prpd/tools/run_fixture.py --all` or `<fixture-dir>`) that scores a fixture's target repo against its `fixture.json` `expected` block using only end-state, code-verifiable checks. For `init` fixtures:
 

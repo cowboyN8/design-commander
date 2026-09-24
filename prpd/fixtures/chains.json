@@ -1,0 +1,16 @@
+{
+  "_note": "Defines which fixtures form a single end-to-end chain (init -> ticket -> pr on the same repo) versus a standalone fixture that only exercises one stage. The end-to-end success rate is computed over chains, not individual fixtures -- a chain only counts as a successful end-to-end run if every fixture in it currently passes.",
+  "chains": [
+    {
+      "id": "greenfield-manage-users",
+      "description": "01-greenfield (init) -> 02-ticket-new-page (ticket, Table extension) -> 03-pr-manage-users (pr, fail-fix-pass + override + adversarial challenge)",
+      "fixtures": ["01-greenfield", "02-ticket-new-page", "03-pr-manage-users"]
+    }
+  ],
+  "standalone": [
+    {
+      "id": "04-existing-inconsistent",
+      "description": "Init-only fixture (dimension classification + source reconciliation). Not yet extended into a ticket/pr chain, so it is reported separately rather than counted toward end-to-end chain success."
+    }
+  ]
+}

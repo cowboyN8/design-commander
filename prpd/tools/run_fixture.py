@@ -16,11 +16,14 @@ Exit code is non-zero if any fixture fails a check.
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent
 FIXTURES_DIR = TOOLS_DIR.parent / "fixtures"
 PRPD_PY = TOOLS_DIR / "prpd.py"
+CHAINS_PATH = FIXTURES_DIR / "chains.json"
+RESULTS_LOG = FIXTURES_DIR / "results.jsonl"
 
 
 class Result:
@@ -357,12 +360,87 @@ def print_report(fixture_id, results, unverified_behaviors):
     return all_ok
 
 
+def load_chains():
+    if not CHAINS_PATH.exists():
+        return [], []
+    data = load_json(CHAINS_PATH)
+    return data.get("chains", []), data.get("standalone", [])
+
+
+def compute_and_report_end_to_end(fixture_results: dict):
+    """fixture_results: {fixture_id: bool_passed}. Prints and returns the
+    end-to-end summary; a 'chain' only counts as a successful end-to-end run
+    if every fixture in it currently passes -- this is the number the
+    certification rubric calls the 'end-to-end number,' not a per-step
+    average."""
+    chains, standalone = load_chains()
+    print("\n== End-to-end chains ==")
+    chain_results = {}
+    for chain in chains:
+        fids = chain["fixtures"]
+        known = [fixture_results.get(f) for f in fids]
+        chain_passed = all(known) and None not in known
+        chain_results[chain["id"]] = chain_passed
+        status = "PASS" if chain_passed else "FAIL"
+        print(f"  [{status}] {chain['id']}: {' -> '.join(fids)}")
+
+    if chains:
+        passed = sum(1 for v in chain_results.values() if v)
+        rate = passed / len(chain_results)
+        print(f"\nEND-TO-END SUCCESS RATE: {passed}/{len(chain_results)} chains ({rate:.0%})")
+        print("  Sample-size caveat: this is a small, growing number of chains, each")
+        print("  currently run once per invocation, not repeated statistical trials.")
+        print("  See SUCCESS_RATE.md for the trend log and methodology.")
+    else:
+        rate = None
+        print("  no chains defined in chains.json")
+
+    if standalone:
+        print("\n== Standalone fixtures (not part of an end-to-end chain yet) ==")
+        for s in standalone:
+            fid = s["id"]
+            status = "PASS" if fixture_results.get(fid) else ("FAIL" if fid in fixture_results else "UNKNOWN")
+            print(f"  [{status}] {fid}")
+
+    return chain_results, rate
+
+
+def record_result(fixture_results: dict, chain_results: dict, end_to_end_rate):
+    RESULTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "fixture_results": fixture_results,
+        "chain_results": chain_results,
+        "mechanical_pass_rate": sum(1 for v in fixture_results.values() if v) / len(fixture_results) if fixture_results else None,
+        "end_to_end_rate": end_to_end_rate,
+    }
+    with RESULTS_LOG.open("a") as f:
+        f.write(json.dumps(entry) + "\n")
+    return entry
+
+
+def print_trend():
+    if not RESULTS_LOG.exists():
+        print("no recorded runs yet -- run `run_fixture.py --all` at least once")
+        return
+    lines = [json.loads(l) for l in RESULTS_LOG.read_text().splitlines() if l.strip()]
+    print(f"{'timestamp':<28} {'mechanical':<12} {'end-to-end':<12}")
+    for entry in lines:
+        mech = f"{entry['mechanical_pass_rate']:.0%}" if entry.get("mechanical_pass_rate") is not None else "n/a"
+        e2e = f"{entry['end_to_end_rate']:.0%}" if entry.get("end_to_end_rate") is not None else "n/a"
+        print(f"{entry['ts']:<28} {mech:<12} {e2e:<12}")
+    print(f"\n{len(lines)} recorded run(s) total.")
+
+
 def main():
     if len(sys.argv) != 2:
         print(__doc__)
         sys.exit(2)
 
     arg = sys.argv[1]
+    if arg == "--report":
+        print_trend()
+        sys.exit(0)
     if arg == "--all":
         fixture_dirs = sorted(
             p.parent for p in FIXTURES_DIR.glob("*/fixture.json")
@@ -376,13 +454,21 @@ def main():
 
     all_passed = True
     passed_count = 0
+    fixture_results = {}
     for fixture_dir in fixture_dirs:
         fixture_id, results, unverified_behaviors = score_fixture(fixture_dir)
         ok = print_report(fixture_id, results, unverified_behaviors)
         all_passed = all_passed and ok
         passed_count += 1 if ok else 0
+        fixture_results[fixture_id] = ok
 
     print(f"\n{passed_count}/{len(fixture_dirs)} fixture(s) fully passed mechanical checks")
+
+    chain_results, e2e_rate = ({}, None)
+    if arg == "--all":
+        chain_results, e2e_rate = compute_and_report_end_to_end(fixture_results)
+        record_result(fixture_results, chain_results, e2e_rate)
+
     sys.exit(0 if all_passed else 1)
 
 
