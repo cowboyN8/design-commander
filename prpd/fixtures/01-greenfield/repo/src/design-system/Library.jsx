@@ -7,6 +7,7 @@ import { Select } from "./components/Select/Select";
 import { Checkbox } from "./components/Checkbox/Checkbox";
 import { Card } from "./components/Card/Card";
 import { Modal } from "./components/Modal/Modal";
+import { Table } from "./components/Table/Table";
 
 function Section({ title, children }) {
   return (
@@ -146,6 +147,38 @@ function SemanticSwatch({ name }) {
       <Text variant="caption">--color-{name}</Text>
     </div>
   );
+}
+
+const TABLE_COLUMNS = [
+  { key: "name", label: "Name", sortable: true },
+  { key: "email", label: "Email" },
+  { key: "role", label: "Role", sortable: true },
+  { key: "status", label: "Status" },
+];
+
+const TABLE_ROWS = [
+  { id: 1, name: "Ada Lovelace", email: "ada@example.com", role: "Admin", status: <Badge variant="success">Active</Badge> },
+  { id: 2, name: "Grace Hopper", email: "grace@example.com", role: "Member", status: <Badge variant="warning">Invited</Badge> },
+  { id: 3, name: "Alan Turing", email: "alan@example.com", role: "Member", status: <Badge variant="neutral">Disabled</Badge> },
+];
+
+function TableDemo() {
+  const [sort, setSort] = useState({ key: "name", direction: "ascending" });
+
+  function handleSort(key) {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "ascending" ? "descending" : "ascending" }
+        : { key, direction: "ascending" }
+    );
+  }
+
+  const sortedRows = [...TABLE_ROWS].sort((a, b) => {
+    const dir = sort.direction === "ascending" ? 1 : -1;
+    return a[sort.key] > b[sort.key] ? dir : a[sort.key] < b[sort.key] ? -dir : 0;
+  });
+
+  return <Table columns={TABLE_COLUMNS} rows={sortedRows} sort={sort} onSort={handleSort} />;
 }
 
 export function Library() {
@@ -311,6 +344,30 @@ export function Library() {
             Built on native &lt;dialog&gt;: focus trap, Escape-to-close, and backdrop-click all work without custom JS.
           </Text>
         </Modal>
+      </Section>
+
+      <Section title="Table (extension approved via /ticket-agent TICKET-101)">
+        <Text variant="caption" as="div" style={{ marginBottom: "0.4rem" }}>
+          Default — sortable columns, status via Badge composition
+        </Text>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <TableDemo />
+        </div>
+
+        <Text variant="caption" as="div" style={{ marginBottom: "0.4rem" }}>Loading</Text>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <Table columns={TABLE_COLUMNS} rows={[]} loading />
+        </div>
+
+        <Text variant="caption" as="div" style={{ marginBottom: "0.4rem" }}>Empty</Text>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <Table columns={TABLE_COLUMNS} rows={[]} emptyMessage="No users yet." />
+        </div>
+
+        <Text variant="caption" as="div" style={{ marginBottom: "0.4rem" }}>Error (with retry)</Text>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <Table columns={TABLE_COLUMNS} rows={[]} error="Couldn't load users." onRetry={() => {}} />
+        </div>
       </Section>
     </main>
   );

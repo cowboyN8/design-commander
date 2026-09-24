@@ -20,8 +20,10 @@ when known.
    linked Figma designs, parent/child/related work items.
 2. Read `.prpd/baseline.json`. If absent or `outcome: blocked`, stop and tell
    the user to run `/init-agent` first.
-3. Read prior context: `ticket get <ticket-number>` — if this ticket was
-   reviewed before, build on it rather than starting over.
+3. Read prior context: `ticket get <ticket-number>` — exits 0 whether or not
+   anything was recorded before, so treat "no prior context" as the normal
+   first-review case and build on it, not an error, if this ticket was
+   reviewed before.
 4. Check `baseline.gaps` — if this ticket touches a gapped area, that is a
    first-class finding, not a footnote.
 
@@ -68,7 +70,8 @@ extension when future reuse is reasonably likely.
 ## Step 4 — Persist and report
 
 Write findings and every approved decision via `ticket upsert <ticket-number>`
-(`--finding-json` for objects, `--decision` for decisions). Report to the user:
+(`--finding-json` for objects, `--decision` for decisions), then run `ticket
+validate` to confirm `tickets.json` is still schema-valid. Report to the user:
 
 - Readiness verdict: ready / ready with conditions / blocked
 - All findings (blockers first, then advisory, then needs-review)

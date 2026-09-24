@@ -14,7 +14,8 @@ Commands:
     baseline set <dot.path> <json-val>  Set a field in baseline.json (replaces the whole value)
     baseline append <dot.path> <json>   Append one item to an array field (e.g. components, sources, gaps)
     check-files                         Verify stack/component/token/library paths exist
-    ticket get <ticket-id>              Print a ticket's recorded context
+    ticket validate                     Validate tickets.json against schema
+    ticket get <ticket-id>              Print a ticket's recorded context (no error if none yet)
     ticket upsert <ticket-id>           Merge findings/decisions into tickets.json
                                         (--finding "..." / --decision "...", repeatable)
 """
@@ -197,11 +198,50 @@ def cmd_check_files(args, repo_dir: Path) -> None:
 
 # ---------------------------------------------------------------- tickets
 
+def cmd_ticket_validate(args, repo_dir: Path) -> None:
+    path = prpd_dir(repo_dir) / "tickets.json"
+    data = load_json(path)
+    schema = json.loads((SCHEMA_DIR / "tickets.schema.json").read_text())
+    try:
+        import jsonschema  # type: ignore
+        jsonschema.validate(data, schema)
+        ok(f"{path} is valid")
+        return
+    except ImportError:
+        pass  # fall back to structural checks below
+    except Exception as e:
+        fail(str(e))
+
+    problems = []
+    required = schema["additionalProperties"]["required"]
+    valid_engines = schema["additionalProperties"]["properties"]["findings"]["items"]["anyOf"][1]["properties"]["engine"]["enum"]
+    valid_severities = schema["additionalProperties"]["properties"]["findings"]["items"]["anyOf"][1]["properties"]["severity"]["enum"]
+    for ticket_id, record in data.items():
+        for key in required:
+            if key not in record:
+                problems.append(f"{ticket_id}: missing required field: {key}")
+        for finding in record.get("findings", []):
+            if not isinstance(finding, dict):
+                continue
+            if finding.get("engine") not in valid_engines:
+                problems.append(f"{ticket_id}: finding {finding.get('id')} has invalid engine: {finding.get('engine')!r}")
+            if finding.get("severity") not in valid_severities:
+                problems.append(f"{ticket_id}: finding {finding.get('id')} has invalid severity: {finding.get('severity')!r}")
+    if problems:
+        fail("invalid tickets.json (install `jsonschema` for full validation):\n  " + "\n  ".join(problems))
+    ok(f"{path} passed structural checks (install `jsonschema` for full schema validation)")
+
+
 def cmd_ticket_get(args, repo_dir: Path) -> None:
-    tickets = load_json(prpd_dir(repo_dir) / "tickets.json")
+    path = prpd_dir(repo_dir) / "tickets.json"
+    tickets = json.loads(path.read_text()) if path.exists() else {}
     record = tickets.get(args.ticket_id)
     if record is None:
-        fail(f"no context recorded for {args.ticket_id}")
+        # No prior context is a normal, expected case (e.g. a ticket's first
+        # review), not an error -- exit 0 so callers don't have to parse
+        # stderr to tell "nothing recorded yet" apart from a real failure.
+        ok(f"no prior context recorded for {args.ticket_id}")
+        return
     print(json.dumps(record, indent=2))
 
 
@@ -282,6 +322,9 @@ def main() -> None:
 
     p_chk = sub.add_parser("check-files", parents=[common], help="verify recorded paths exist")
     p_chk.set_defaults(func=cmd_check_files)
+
+    p_tval = tick_sub.add_parser("validate", parents=[common], help="validate tickets.json against schema")
+    p_tval.set_defaults(func=cmd_ticket_validate)
 
     p_tget = tick_sub.add_parser("get", parents=[common], help="print recorded ticket context")
     p_tget.add_argument("ticket_id")

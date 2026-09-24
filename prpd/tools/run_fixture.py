@@ -115,6 +115,37 @@ def check_build(repo_dir: Path) -> Result:
     return Result("npm run build succeeds", ok, "" if ok else proc.stdout[-2000:] + proc.stderr[-2000:])
 
 
+def check_ticket_validate(repo_dir: Path) -> Result:
+    proc = run_prpd(repo_dir, "ticket", "validate")
+    return Result("ticket validate", proc.returncode == 0, proc.stderr.strip() or proc.stdout.strip())
+
+
+def check_ticket_recorded(repo_dir: Path, ticket_id: str) -> Result:
+    tickets_path = repo_dir / ".prpd" / "tickets.json"
+    if not tickets_path.is_file():
+        return Result(f"ticket {ticket_id} recorded in tickets.json", False, f"{tickets_path} does not exist")
+    tickets = load_json(tickets_path)
+    record = tickets.get(ticket_id)
+    ok_ = record is not None and record.get("findings") and record.get("approved_decisions")
+    return Result(
+        f"ticket {ticket_id} recorded in tickets.json",
+        bool(ok_),
+        "" if ok_ else f"no findings/decisions recorded for {ticket_id}",
+    )
+
+
+def check_extension_in_baseline(repo_dir: Path, component_name: str) -> Result:
+    baseline_path = repo_dir / ".prpd" / "baseline.json"
+    baseline = load_json(baseline_path)
+    comp = next((c for c in baseline.get("components", []) if c.get("name") == component_name), None)
+    ok_ = comp is not None and comp.get("status") == "approved" and (repo_dir / comp.get("path", "")).exists()
+    return Result(
+        f"extension '{component_name}' approved and present in baseline",
+        bool(ok_),
+        "" if ok_ else f"{component_name} not found as an approved component with an existing path",
+    )
+
+
 def check_audit_log(repo_dir: Path, required_steps) -> Result:
     audit_path = repo_dir / ".prpd" / "audit.jsonl"
     if not audit_path.is_file():
@@ -178,7 +209,28 @@ COVERED_BEHAVIORS = {
     "generates a design-system library page": "library_page recorded and exists",
     "writes baseline via prpd.py (schema-valid)": "baseline validate",
     "check-files passes at end of run": "check-files",
+    "adds the extension to baseline.json components with source referencing the ticket": "extension approved and present in baseline",
+    "persists findings and decisions via ticket upsert (schema-valid)": "ticket recorded in tickets.json",
+    "ticket validate passes at end of run": "ticket validate",
 }
+
+
+def score_ticket_fixture(fixture_dir: Path, fixture: dict):
+    target = fixture.get("target_repo")
+    if not target:
+        return [Result("target_repo resolves", False, "fixture.json has no target_repo")]
+    repo_dir = (fixture_dir / target).resolve()
+    if not repo_dir.is_dir():
+        return [Result("target_repo resolves", False, f"{repo_dir} does not exist")]
+
+    ticket_id = fixture.get("ticket", {}).get("id")
+    expected = fixture.get("expected", {})
+    results = [check_ticket_validate(repo_dir), check_baseline_validate(repo_dir), check_files(repo_dir)]
+    results.append(check_ticket_recorded(repo_dir, ticket_id))
+    extension = expected.get("extension_approved")
+    if extension:
+        results.append(check_extension_in_baseline(repo_dir, extension))
+    return results
 
 
 def score_fixture(fixture_dir: Path):
@@ -188,6 +240,8 @@ def score_fixture(fixture_dir: Path):
 
     if stage == "init":
         results = score_init_fixture(fixture_dir, fixture)
+    elif stage == "ticket":
+        results = score_ticket_fixture(fixture_dir, fixture)
     else:
         results = [Result(f"stage '{stage}' scoring", False, "no mechanical checks implemented for this stage yet")]
 

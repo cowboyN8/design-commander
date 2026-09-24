@@ -134,6 +134,20 @@
         "default"
       ],
       "notes": "native <dialog> + showModal() for focus trap/inerting/top-layer, aria-labelledby to title, close on Escape/backdrop-click"
+    },
+    {
+      "name": "Table",
+      "status": "approved",
+      "source": "ticket-agent:TICKET-101",
+      "path": "src/design-system/components/Table/Table.jsx",
+      "variants": [
+        "default",
+        "sortable",
+        "loading",
+        "empty",
+        "error"
+      ],
+      "notes": "native <table>, aria-sort on sortable headers, role=alert error banner with retry, stacked responsive layout below 640px; callers compose cell content (e.g. Badge for status) rather than Table owning domain meaning"
     }
   ],
   "gaps": [

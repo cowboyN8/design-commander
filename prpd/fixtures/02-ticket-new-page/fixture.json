@@ -1,0 +1,46 @@
+{
+  "id": "02-ticket-new-page",
+  "stage": "ticket",
+  "description": "First real ticket against the 01-greenfield baseline. Simulates an ADO fetch (no live ticket exists) for a new admin screen that needs a Table component that doesn't exist yet, and directly triggers the large_components_and_page_patterns gap recorded during init. Tests the reuse-vs-exception extension workflow and the readiness-blocker logic for undefined states.",
+  "target_repo": "../01-greenfield/repo",
+  "ticket": {
+    "id": "TICKET-101",
+    "title": "Add a \"Manage Users\" screen showing existing users in a table",
+    "description": "Admins need a screen listing all users in the system (name, email, role, status) so they can review who has access before inviting new people. This is the first real screen in the app.",
+    "acceptance_criteria": [
+      "Table showing name, email, role, status columns for all users",
+      "Status shown as a visual indicator (active/invited/disabled)",
+      "Sortable by name and role",
+      "Empty state when no users exist yet",
+      "Loading state while data fetches",
+      "Responsive down to mobile width (single-column stacked view acceptable)"
+    ],
+    "linked_figma": null,
+    "related_work_items": []
+  },
+  "expected": {
+    "readiness_verdict": "ready_with_conditions",
+    "blockers_before_extension": [
+      "error state undefined",
+      "permission behavior for non-admins undefined",
+      "no Table component exists"
+    ],
+    "extension_approved": "Table",
+    "behaviors": [
+      "flags baseline.gaps overlap as a first-class finding, not a footnote",
+      "treats undefined error/permission states as blockers, not advisories",
+      "asks before assuming reuse vs. ticket-scoped exception",
+      "searches Figma/repo before proposing a new component",
+      "implements and validates only the approved extension, not the full ticket",
+      "adds the extension to baseline.json components with source referencing the ticket",
+      "persists findings and decisions via ticket upsert (schema-valid)",
+      "ticket validate passes at end of run"
+    ]
+  },
+  "user_simulation": {
+    "notes": "Expected answers a simulated user would give during this ticket review.",
+    "error_state": "inline error banner with a retry action",
+    "permission_handling": "403-style message for non-admins",
+    "table_reuse_decision": "agree — shared extension, not a ticket-scoped exception"
+  }
+}

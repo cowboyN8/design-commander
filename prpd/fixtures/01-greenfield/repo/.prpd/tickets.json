@@ -1,0 +1,52 @@
+{
+  "TICKET-101": {
+    "findings": [
+      {
+        "id": "ux_pattern-1",
+        "engine": "ux_pattern",
+        "severity": "blocker",
+        "title": "Error state undefined",
+        "description": "Ticket does not specify workflow behavior when the user list fails to load.",
+        "suggested_fix": "Define an inline error state with retry, per user decision.",
+        "confidence": 0.9,
+        "traceability": "none"
+      },
+      {
+        "id": "ux_pattern-2",
+        "engine": "ux_pattern",
+        "severity": "blocker",
+        "title": "Permission behavior undefined",
+        "description": "Ticket implies admin-only access but does not define non-admin behavior.",
+        "suggested_fix": "Show a 403-style message for non-admins, per user decision.",
+        "confidence": 0.88,
+        "traceability": "none"
+      },
+      {
+        "id": "accessibility-1",
+        "engine": "accessibility",
+        "severity": "advisory",
+        "title": "Sortable column announcement",
+        "description": "Sortable table columns should reflect sort state to assistive tech.",
+        "suggested_fix": "Use aria-sort on column headers, now implemented in the Table extension.",
+        "confidence": 0.85,
+        "traceability": "baseline"
+      },
+      {
+        "id": "convention-1",
+        "engine": "convention",
+        "severity": "blocker",
+        "title": "No Table component exists",
+        "description": "Baseline has no Table component; this ticket needs one to render the user list.",
+        "suggested_fix": "Add Table as a reusable design-system extension.",
+        "confidence": 0.9,
+        "traceability": "none"
+      }
+    ],
+    "approved_decisions": [
+      "Error state: inline role=alert banner with a Retry button (Table component's error/onRetry props).",
+      "Permission handling: non-admins see a 403-style message rather than the table.",
+      "Table approved as a shared design-system extension (not a ticket-scoped exception) given likely reuse across future list screens."
+    ],
+    "updated_at": "2026-09-24T16:47:50.659886+00:00"
+  }
+}

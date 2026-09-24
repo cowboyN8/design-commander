@@ -372,7 +372,9 @@ When reuse potential is uncertain, the system must ask the user. It should bias 
 
 ### 6.5 Ticket context persistence
 
-Ticket findings and approved decisions must be persisted to `.prpd/tickets.json` and remain available to `/pr-agent`. Pull-request review must verify implementation against this context rather than rediscovering intent without history.
+Ticket findings and approved decisions must be persisted to `.prpd/tickets.json` and remain available to `/pr-agent`. Pull-request review must verify implementation against this context rather than rediscovering intent without history. `tickets.json` must be validated against its schema (`prpd.py ticket validate`) as part of persistence, the same way `baseline.json` is validated after initialization.
+
+Reading prior ticket context (`prpd.py ticket get <ticket-number>`) must succeed whether or not anything was previously recorded for that ticket — no prior context is a normal, expected first-review case, not an error condition.
 
 If requirements or component needs change during development, the developer should rerun:
 
@@ -572,14 +574,14 @@ The fixture suite must eventually include:
 
 A fixture is a directory containing:
 
-- `repo/` — a repository in the state the fixture is meant to exercise (for `init` fixtures, this is the completed, committed result of a run).
-- `fixture.json` — `id`, `stage`, a human `description`, an `expected` block (`dimensions`, `outcome` as an allowed set, and free-text `behaviors` describing expected process), and, for stages that require simulated input, a `user_simulation` block recording the answers a user would give.
+- `repo/` (init fixtures) — a repository in the state the fixture is meant to exercise; for `init` fixtures, this is the completed, committed result of a run. Ticket/PR-stage fixtures instead reference an existing init fixture's repo via `target_repo`, since ticket and PR review operate on a repo that already has a baseline rather than a fresh scaffold.
+- `fixture.json` — `id`, `stage`, a human `description`, an `expected` block (stage-specific: `dimensions`/`outcome` for `init`, `readiness_verdict`/`extension_approved` for `ticket`, etc., plus free-text `behaviors` describing expected process), and, for stages that require simulated input, a `user_simulation` block recording the answers a user would give and (for `ticket`/`pr` stages) a `ticket`/`pr` block simulating the fetched work item, since there is no live ADO integration in these fixtures.
 
-This format is proven by `prpd/fixtures/01-greenfield/`, the first fixture built and scored end to end.
+This format is proven by `prpd/fixtures/01-greenfield/` (init) and `prpd/fixtures/02-ticket-new-page/` (ticket — the first fixture to exercise `/ticket-agent`'s reuse-vs-exception extension workflow end to end).
 
 ### 10.2 Test runner v1 (mechanical checker)
 
-`prpd/tools/run_fixture.py` is a deterministic, dependency-free script (`python3 prpd/tools/run_fixture.py --all` or `<fixture-dir>`) that scores a fixture's `repo/` against its `fixture.json` `expected` block using only end-state, code-verifiable checks:
+`prpd/tools/run_fixture.py` is a deterministic, dependency-free script (`python3 prpd/tools/run_fixture.py --all` or `<fixture-dir>`) that scores a fixture's target repo against its `fixture.json` `expected` block using only end-state, code-verifiable checks. For `init` fixtures:
 
 - `baseline validate` and `check-files` both pass
 - recorded `dimensions` exactly match `expected.dimensions`
@@ -588,6 +590,12 @@ This format is proven by `prpd/fixtures/01-greenfield/`, the first fixture built
 - every `approved` component/foundation's recorded path exists
 - the repo's build succeeds (skipped, not silently passed, if dependencies are not installed)
 - `.prpd/audit.jsonl` is well-formed and contains the fixture stage's minimum required step tags
+
+For `ticket` fixtures:
+
+- `ticket validate`, `baseline validate`, and `check-files` all pass
+- the ticket ID has recorded findings and approved decisions in `tickets.json`
+- any `expected.extension_approved` component is present in the baseline as `approved` with an existing file
 
 It exits non-zero if any check fails, and separately lists which `expected.behaviors` entries it does **not** cover, since those describe process during a run (e.g. "asks stack questions before generating code") rather than the finished repo state, and cannot be verified from artifacts alone.
 

@@ -372,6 +372,21 @@ I proved the tool actually discriminates, rather than just always printing PASS,
 
 This resolves the fixture-format half of the previously open "fixture format and measurable success criteria" decision: the format is the `expected`/`user_simulation` structure already proven by `01-greenfield`, and v1 success criteria are the eight mechanical checks in `prpd/tools/run_fixture.py`. What's still open is scored below.
 
+## Running `/ticket-agent` for the first time
+
+With the mechanical checker in place, I moved to the biggest remaining unknown: `/ticket-agent` had a full prompt, a schema, and CLI commands, but `ticket upsert` had never once been invoked. There was no real ADO ticket to test against, so I did the same thing we did for Figma during init — treated the input as simulated rather than skipping the test. I drafted a ticket by hand (`TICKET-101`, a "Manage Users" admin screen needing a table that doesn't exist yet) specifically because it would exercise the highest-value untested logic — the reuse-vs-exception decision — and because it directly collides with the `large_components_and_page_patterns` gap I'd deliberately left open at the end of init, which was written to expect exactly this trigger.
+
+Running it for real found two more real bugs, continuing the pattern from init:
+
+- `ticket get` hard-failed (exit 1) both when `tickets.json` didn't exist at all and when it existed but didn't contain the requested ticket — even though both cases mean the same ordinary thing, "no prior context yet, proceed fresh." I fixed it to exit 0 and report that plainly, so the agent doesn't have to parse stderr text to tell a normal case apart from a real failure.
+- `tickets.schema.json` existed but nothing ever validated against it — there was no `ticket validate` command, unlike `baseline validate`. I added one, including the same structural-fallback behavior as baseline validation when `jsonschema` isn't installed.
+
+I also caught my own mistake mid-run: I initially classified the "undefined error state" and "undefined permission behavior" findings as `accessibility` engine findings, but they're workflow/UX-completeness gaps, not accessibility ones — only the sortable-column-announcement finding actually belongs to accessibility. Since guardrails are supposed to preserve which review perspective produced each finding, getting engine attribution right isn't cosmetic, so I corrected it before persisting.
+
+I carried through the whole workflow: assessed readiness (two blockers — undefined error and permission states — plus one advisory), asked you the three real ambiguous questions rather than guessing, then ran the extension workflow for the missing `Table` component — searched Figma/repo (nothing existed), specified it with you, got approval, implemented it (native `<table>`, `aria-sort` on sortable headers, a `role="alert"` retry banner, responsive stacked layout below 640px), validated it visually in `library.html`, and added it to the baseline as `source: "ticket-agent:TICKET-101"`. Findings and decisions were persisted via `ticket upsert`, and I made a point of stopping there — `/ticket-agent`'s job is to validate the extension, not build the whole "Manage Users" page, so the ticket-scoped feature work (403 handling, error retry wiring) stays real implementation work for later, verified by `/pr-agent`.
+
+I then extended `run_fixture.py` and the fixture format to cover the `ticket` stage (`prpd/fixtures/02-ticket-new-page/`), proving the same discrimination test as before: corrupting the recorded findings makes the checker fail, restoring them makes it pass again. Both fixtures still pass together, confirming the `Table` extension didn't regress the original init result.
+
 ## Decisions still to make
 
 The following questions remain open:
