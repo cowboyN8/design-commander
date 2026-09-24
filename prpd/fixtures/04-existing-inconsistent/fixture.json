@@ -1,0 +1,31 @@
+{
+  "id": "04-existing-inconsistent",
+  "stage": "init",
+  "description": "Existing React app with a partial, inconsistent coded design system and a referenced-but-unread Figma file. Tests dimension classification landing away from the greenfield defaults, source reconciliation (color drift, prop drift, a Figma-only component) per spec section 5.5, and legacy-vs-precedent judgment on two competing Card implementations. Figma access is simulated via figma-export.json (no live Figma MCP integration exists in this environment), the same approach used for simulated ADO ticket/PR content in other fixtures.",
+  "expected": {
+    "dimensions": {
+      "figma": "partial",
+      "coded_system": "partial",
+      "source_relationship": "drifted",
+      "maturity": "existing_inconsistent"
+    },
+    "outcome": ["ready_with_gaps"],
+    "behaviors": [
+      "does not classify figma as absent just because there is no live MCP call in this environment",
+      "identifies the color drift (#1D4ED8 in code vs #2563EB in Figma) and asks which wins rather than assuming",
+      "identifies the Button prop drift (kind vs variant, missing danger) as a gap or conflict, not silently ignored",
+      "treats OldCard as legacy despite being used more often than Card, and records why",
+      "adds Badge informed by the Figma spec rather than inventing variants from scratch",
+      "preserves Card.jsx rather than rebuilding it, since it already matches Figma",
+      "writes baseline via prpd.py (schema-valid)",
+      "check-files passes at end of run"
+    ]
+  },
+  "user_simulation": {
+    "notes": "Expected answers a simulated user would give during init.",
+    "stack": { "framework": "react", "styling": "plain-css" },
+    "accessibility_target": "WCAG 2.2 AA",
+    "source_priority": "figma-first for conflicts, since it is the more recently updated source of truth per the README",
+    "approvals": "approve reconciliation decisions and layer specs as presented"
+  }
+}

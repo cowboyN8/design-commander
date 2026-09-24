@@ -134,6 +134,8 @@ Initialization behavior must be selected from the combination of these dimension
 
 Figma inspection must use the Figma MCP server to retrieve structured design context (components, variables, styles, and frames). If the MCP server or the relevant files are unreachable, the initializer must classify Figma state as `unavailable` rather than `absent` and must not substitute assumptions for evidence.
 
+Fixtures exercising Figma-dependent behavior in an environment without a live Figma MCP connection must simulate its output as a fixture input (e.g. a `figma-export.json` alongside `fixture.json`) rather than skip the scenario — the same convention used for simulated ADO ticket/PR content in `ticket`/`pr` fixtures. The simulated data is treated as real evidence for the fixture's purposes and must be documented as simulated in the fixture description.
+
 ### 5.4 Evidence sources
 
 The initializer may evaluate:
@@ -580,7 +582,7 @@ A fixture is a directory containing:
 - `repo/` (init fixtures) — a repository in the state the fixture is meant to exercise; for `init` fixtures, this is the completed, committed result of a run. Ticket/PR-stage fixtures instead reference an existing init fixture's repo via `target_repo`, since ticket and PR review operate on a repo that already has a baseline rather than a fresh scaffold.
 - `fixture.json` — `id`, `stage`, a human `description`, an `expected` block (stage-specific: `dimensions`/`outcome` for `init`, `readiness_verdict`/`extension_approved` for `ticket`, etc., plus free-text `behaviors` describing expected process), and, for stages that require simulated input, a `user_simulation` block recording the answers a user would give and (for `ticket`/`pr` stages) a `ticket`/`pr` block simulating the fetched work item, since there is no live ADO integration in these fixtures.
 
-This format is proven by `prpd/fixtures/01-greenfield/` (init), `prpd/fixtures/02-ticket-new-page/` (ticket — the first fixture to exercise `/ticket-agent`'s reuse-vs-exception extension workflow end to end), and `prpd/fixtures/03-pr-manage-users/` (pr — the first fixture to exercise `/pr-agent`'s traceability check, all three engines, and the fail-then-fix-then-pass rerun loop end to end).
+This format is proven by `prpd/fixtures/01-greenfield/` (init), `prpd/fixtures/02-ticket-new-page/` (ticket — the first fixture to exercise `/ticket-agent`'s reuse-vs-exception extension workflow end to end), `prpd/fixtures/03-pr-manage-users/` (pr — the first fixture to exercise `/pr-agent`'s traceability check, all three engines, and the fail-then-fix-then-pass rerun loop end to end), and `prpd/fixtures/04-existing-inconsistent/` (init — the first fixture to exercise dimension classification away from the greenfield defaults and §5.5's source-conflict reconciliation, using a simulated Figma MCP export the same way ticket/PR fixtures simulate ADO content).
 
 ### 10.2 Test runner v1 (mechanical checker)
 

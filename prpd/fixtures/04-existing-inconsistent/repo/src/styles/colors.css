@@ -1,0 +1,24 @@
+:root {
+  /* Reconciled with Figma "Design System v2": primary corrected from the
+     code's ad hoc #1D4ED8 to Figma's #2563EB. The old value is kept as the
+     hover shade since it's already a proven, slightly darker step. */
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-focus-ring: #2563EB;
+
+  --color-danger: #DC2626;
+  --color-danger-text: #B91C1C;
+  --color-danger-surface: #FEE2E2;
+
+  --color-success-text: #15803D;
+  --color-success-surface: #DCFCE7;
+
+  --color-warning-text: #B45309;
+  --color-warning-surface: #FEF3C7;
+
+  --color-text: #111827;
+  --color-text-secondary: #4B5563;
+  --color-background: #ffffff;
+  --color-surface: #F3F4F6;
+  --color-border: #D1D5DB;
+}

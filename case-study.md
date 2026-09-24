@@ -409,6 +409,16 @@ The one remaining untested corner of `/pr-agent`: a developer accepting a blocke
 
 `ticket resolve ... --status overridden --reasons ... --by ...` worked exactly as built: it recorded the reasons/who/when on the finding, and the same verdict logic already written for the "fixed" case (§8.5: fail while any blocker is `open`, pass once every blocker is `fixed` or `overridden`) correctly treated the override as resolving the block without any new code — a good sign the earlier `status` design was the right shape, not something that only happened to work for one case. Extended `run_fixture.py` and `03-pr-manage-users/fixture.json` to check the override is actually recorded with all three required fields, and confirmed it discriminates (stripping the `override` object fails the check, restoring it passes).
 
+## Running `/init-agent` against a messier, existing repo
+
+Everything proven so far ran against the easiest possible case: `01-greenfield` had no Figma, no existing code, and every dimension landed on its default. That left the entire conflict-resolution half of the spec (§5.5) completely unexercised — dimension classification had never once produced anything other than the greenfield defaults.
+
+I built a second init fixture, `04-existing-inconsistent`, specifically to stress that gap: an existing app with a partially-built, inconsistent coded system (a `Button` using an ad hoc `kind` prop and hardcoded colors, two competing `Card` implementations) and a README pointing at a Figma file. Since there's no live Figma MCP integration in this environment, I simulated its output the same way I've simulated ADO ticket/PR content elsewhere — a `figma-export.json` standing in for what the MCP would return, deliberately drifted from the code (different primary color, a renamed/expanded Button prop, and a `Badge` that only exists in Figma).
+
+Classification landed somewhere real for the first time: `figma: partial`, `coded_system: partial`, `source_relationship: drifted`, `maturity: existing_inconsistent` — none of them the greenfield defaults. You chose to reconcile component-by-component rather than picking one source wholesale, which the spec explicitly allows for and which turned out to matter: Figma won for color and Button (the code was simply behind), but code won for `Card` (it already matched Figma; rebuilding it would have violated the "preserve validated work" rule), and the two `Card` implementations needed a genuine legacy judgment — `OldCard` is used in more places than `Card`, but frequency isn't precedent, so it got marked legacy with a migration target instead of either being deleted or treated as the winning pattern.
+
+This run didn't surface a new tool bug the way the first three did — the CLI and schema held up fine under a real conflict-resolution scenario, which is itself useful evidence that the earlier fixes were the right ones rather than narrow patches. What it did produce is the first real, concrete precedent for how component-by-component reconciliation actually plays out, which the spec described abstractly but had never been tested against real drifted data.
+
 ## Decisions still to make
 
 The following questions remain open:

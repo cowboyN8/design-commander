@@ -1,0 +1,30 @@
+{
+  "_note": "Simulated Figma MCP output. There is no live Figma MCP integration in this environment, so this file stands in for what a real MCP call to the 'Design System v2' file referenced in the repo's README would return -- the same approach used for simulated ADO ticket/PR content elsewhere in these fixtures. It is treated as real evidence for the purposes of this fixture, not read directly by any tool.",
+  "file": "Design System v2",
+  "variables": {
+    "color": {
+      "primary": { "value": "#2563EB", "description": "Primary brand blue" },
+      "danger": { "value": "#DC2626", "description": "Destructive actions" }
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "props": {
+        "variant": ["primary", "secondary", "danger"]
+      },
+      "notes": "Three variants including danger; code only implements primary/secondary via a differently-named 'kind' prop."
+    },
+    {
+      "name": "Badge",
+      "props": {
+        "variant": ["neutral", "success", "warning", "danger"]
+      },
+      "notes": "Not implemented in code at all yet."
+    },
+    {
+      "name": "Card",
+      "notes": "Matches the newer src/components/Card.jsx in spirit (simple bordered container); does not match legacy/OldCard.jsx."
+    }
+  ]
+}

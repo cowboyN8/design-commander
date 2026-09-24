@@ -163,3 +163,19 @@
 {"ts": "2026-09-24T19:02:14.274203+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-24T19:02:14.315277+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
 {"ts": "2026-09-24T19:02:14.350211+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:30.840396+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:30.871527+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:31.781236+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:31.813143+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:31.844915+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:31.876465+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:31.907138+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:26:31.937535+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:15.025596+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:15.056194+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:16.185860+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:16.215402+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:16.244544+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:16.274483+00:00", "kind": "helper_call", "command": "ticket validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:16.303476+00:00", "kind": "helper_call", "command": "baseline validate", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}
+{"ts": "2026-09-24T19:28:16.333658+00:00", "kind": "helper_call", "command": "check-files", "step": null, "model": null, "tokens_in": null, "tokens_out": null, "cost_usd": null, "result": "ok"}

@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "repo": "existing-inconsistent-app",
+  "initialized_at": "2026-09-24T19:09:08.936830+00:00",
+  "outcome": "ready_with_gaps",
+  "dimensions": {
+    "figma": "partial",
+    "coded_system": "partial",
+    "source_relationship": "drifted",
+    "maturity": "existing_inconsistent"
+  },
+  "stack": {
+    "framework": "react",
+    "styling": "css-modules",
+    "component_dir": "src/components",
+    "token_files": [
+      "src/styles/colors.css"
+    ]
+  },
+  "sources": [
+    {
+      "type": "figma",
+      "location": "Design System v2 (simulated MCP export, figma-export.json)",
+      "authority": "authoritative",
+      "scope": [
+        "color",
+        "Button",
+        "Badge",
+        "Card"
+      ]
+    },
+    {
+      "type": "code",
+      "location": "src/components/",
+      "authority": "reference",
+      "scope": [
+        "existing implementations, pending reconciliation"
+      ]
+    }
+  ],
+  "accessibility_target": "WCAG 2.2 AA",
+  "foundations": {
+    "color": {
+      "status": "approved",
+      "source": "reconciled: figma authoritative for primary/danger, existing colors.css superseded",
+      "notes": "primary corrected #1D4ED8->#2563EB per Figma; danger/success/warning/neutral text tokens added, sized for Badge/Button contrast at WCAG 2.2 AA"
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "status": "approved",
+      "source": "reconciled: figma authoritative",
+      "path": "src/components/Button.jsx",
+      "variants": [
+        "primary",
+        "secondary",
+        "danger",
+        "disabled"
+      ],
+      "notes": "renamed kind->variant and added danger per Figma; colors moved to tokens"
+    },
+    {
+      "name": "Card",
+      "status": "approved",
+      "source": "code confirmed aligned with figma",
+      "path": "src/components/Card.jsx",
+      "variants": [
+        "default"
+      ],
+      "notes": "already matched Figma shape; preserved as-is per spec 5.6 (do not rebuild validated work)"
+    },
+    {
+      "name": "Badge",
+      "status": "approved",
+      "source": "figma spec (no prior code)",
+      "path": "src/components/Badge.jsx",
+      "variants": [
+        "neutral",
+        "success",
+        "warning",
+        "danger"
+      ],
+      "notes": "new component; requires a text label, status not conveyed by color alone"
+    }
+  ],
+  "gaps": [
+    {
+      "area": "large_components_and_page_patterns",
+      "description": "No page-level pattern layer established; App.jsx is still a minimal existing screen, not a real product area exercised through this init. Trigger this layer via /ticket-agent when the first ticket needs it, same as 01-greenfield."
+    }
+  ],
+  "legacy_patterns": [
+    {
+      "description": "OldCard: table-based card layout predating any design-system effort",
+      "location": "src/legacy/OldCard.jsx",
+      "note": "used more often (3 places) than Card.jsx (2 places), but matches neither the code nor Figma source of truth; higher frequency is not precedent"
+    }
+  ],
+  "exceptions": [],
+  "migrations": [
+    {
+      "from": "OldCard",
+      "to": "Card",
+      "status": "planned"
+    }
+  ],
+  "library_page": "library.html"
+}
