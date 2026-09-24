@@ -16,15 +16,21 @@ when known.
 
 ## Step 1 — Load context
 
-1. Fetch the ticket via ADO MCP: title, description, acceptance criteria,
+1. Run `prpd.py guardrail init-to-ticket --repo-dir <repo>` **first, before
+   anything else**. This is a deterministic gate, not a formality — it will
+   refuse (exit 1) if the baseline doesn't exist, is `blocked`, or is
+   incomplete, and only then write `.prpd/gates/init.ok`. If it fails, stop
+   and tell the user to run `/init-agent` first; do not proceed on the
+   strength of your own reading of the baseline.
+2. Fetch the ticket via ADO MCP: title, description, acceptance criteria,
    linked Figma designs, parent/child/related work items.
-2. Read `.prpd/baseline.json`. If absent or `outcome: blocked`, stop and tell
-   the user to run `/init-agent` first.
-3. Read prior context: `ticket get <ticket-number>` — exits 0 whether or not
+3. Read `.prpd/baseline.json` for the approved details (foundations,
+   components, gaps).
+4. Read prior context: `ticket get <ticket-number>` — exits 0 whether or not
    anything was recorded before, so treat "no prior context" as the normal
    first-review case and build on it, not an error, if this ticket was
    reviewed before.
-4. Check `baseline.gaps` — if this ticket touches a gapped area, that is a
+5. Check `baseline.gaps` — if this ticket touches a gapped area, that is a
    first-class finding, not a footnote.
 
 ## Step 2 — Assess readiness
@@ -54,7 +60,12 @@ guided design-system extension:
 1. Search Figma (MCP) and the repo for an existing solution.
 2. Ask clarifying questions.
 3. Specify the addition with the user.
-4. Obtain approval.
+4. Obtain approval, and record it as a punch-out point **before** touching
+   the baseline: `prpd.py punchout record extension_approved:<name>
+   --decision "<what was approved and why>" --by <user> --repo-dir <repo>`.
+   This isn't optional bookkeeping — `baseline append components` will
+   mechanically refuse a component whose `source` mentions "extension" or
+   "ticket-agent" without this on record first.
 5. Implement and validate it (incremental — only the new work).
 6. Add it to `baseline.json` via `baseline append components '{...}'` with
    `status: "approved"`, `source: "extension"`, and update the library page.

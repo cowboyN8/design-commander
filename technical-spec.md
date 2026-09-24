@@ -562,6 +562,20 @@ Guardrails must:
 
 Guardrails must apply the per-engine confidence thresholds and the blocker/advisory enforcement model defined in §7.4, including override recording. Deduplication and merge rules for overlapping findings are **Open**; a concrete observed case exists (`PR-55` in `prpd/fixtures/03-pr-manage-users/`, where the same ad hoc component was flagged separately by the convention engine as untraced and by the ux_pattern engine as visually inconsistent) and should inform whatever rule is decided rather than being resolved arbitrarily in the meantime — findings are kept distinct, not merged, until this is resolved.
 
+### 9.1 Deterministic between-step gates
+
+In addition to the per-finding policies above, the system must enforce deterministic, automated gates positioned **between** agent steps — not human review, and not logic embedded inside an agent's own reasoning. A gate must read only committed state (never trust an agent's self-report that a prior step succeeded), decide pass/fail with no LLM judgment involved, and on pass write a sentinel file recording what it verified and a checksum of the artifact it certified, so a later change to that artifact without rerunning the gate is itself detected as a failure.
+
+`/ticket-agent` must run `prpd.py guardrail init-to-ticket` before doing anything else, and must stop if it fails rather than proceeding on its own reading of the baseline. `/pr-agent` must run `prpd.py guardrail ticket-to-pr <ticket-id>` before reading ticket context, for the same reason. Full gate criteria and proof of active bypass-testing are recorded in `GUARDRAILS.md`.
+
+### 9.2 Adversarial challenge
+
+The system must include an automated adversarial review pass, distinct from the three review engines, that argues against a prior step's conclusion using a fresh, isolated context with no visibility into the original reasoning — only its inputs and outputs. This is what distinguishes it from Stage 2 human re-review: it is scripted and repeatable, not ad hoc, and it cannot simply agree with itself. A successful challenge (finding something the original review missed or got wrong) is persisted as a new finding through the normal `ticket upsert` path, tagged with the step that produced it; a challenge that finds nothing is still logged via `prpd.py audit challenge_run` so the check itself is auditable. Full specification: `prpd/commands/guardrail-challenge.md`. Proof this catches real issues, not just theoretical ones, is recorded in `GUARDRAILS.md`.
+
+### 9.3 Punch-out points
+
+Explicit human decision points must be enforced in code, not only documented as prompt instructions. `baseline set outcome` must refuse to finalize `ready`/`ready_with_gaps` unless `stack_confirmed` and `accessibility_target_confirmed` are on record in `.prpd/punchouts.jsonl`; `baseline append components` must refuse an extension-sourced component unless `extension_approved:<name>` is on record; overriding a blocker (`ticket resolve --status overridden`) must automatically log itself as a punch-out, since accepting risk instead of fixing something is itself a human decision point. Bypass attempts against each of these must be actively tested, not assumed to work from the specification alone. Full point registry and bypass-test results: `PUNCHOUTS.md`.
+
 ## 10. Test runner
 
 The system must be evaluated against representative fixtures rather than only plausible agent output.

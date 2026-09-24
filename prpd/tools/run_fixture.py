@@ -181,6 +181,17 @@ def check_audit_log(repo_dir: Path, required_steps) -> Result:
     )
 
 
+def check_punchout_recorded(repo_dir: Path, point_id: str) -> Result:
+    path = repo_dir / ".prpd" / "punchouts.jsonl"
+    if not path.is_file():
+        return Result(f"punch-out recorded: {point_id}", False, f"{path} does not exist")
+    found = any(
+        json.loads(line).get("point_id") == point_id
+        for line in path.read_text().splitlines() if line.strip()
+    )
+    return Result(f"punch-out recorded: {point_id}", found, "" if found else f"no entry for {point_id}")
+
+
 def score_init_fixture(fixture_dir: Path, fixture: dict):
     repo_dir = fixture_dir / "repo"
     expected = fixture.get("expected", {})
@@ -199,6 +210,8 @@ def score_init_fixture(fixture_dir: Path, fixture: dict):
     results.append(check_approved_paths(repo_dir, baseline))
     results.append(check_build(repo_dir))
     results.append(check_audit_log(repo_dir, ["init.classify", "init.verify"]))
+    results.append(check_punchout_recorded(repo_dir, "stack_confirmed"))
+    results.append(check_punchout_recorded(repo_dir, "accessibility_target_confirmed"))
     return results
 
 
@@ -217,6 +230,13 @@ COVERED_BEHAVIORS = {
 }
 
 
+def check_gate_file(repo_dir: Path, gate_name: str) -> Result:
+    gate_path = repo_dir / ".prpd" / "gates" / gate_name
+    ok_ = gate_path.is_file()
+    detail = "" if ok_ else f"{gate_path} does not exist -- guardrail was never run or did not pass"
+    return Result(f"guardrail gate present: {gate_name}", ok_, detail)
+
+
 def score_ticket_fixture(fixture_dir: Path, fixture: dict):
     target = fixture.get("target_repo")
     if not target:
@@ -229,9 +249,12 @@ def score_ticket_fixture(fixture_dir: Path, fixture: dict):
     expected = fixture.get("expected", {})
     results = [check_ticket_validate(repo_dir), check_baseline_validate(repo_dir), check_files(repo_dir)]
     results.append(check_ticket_recorded(repo_dir, ticket_id))
+    results.append(check_gate_file(repo_dir, "init.ok"))
+    results.append(check_gate_file(repo_dir, f"ticket-{ticket_id}.ok"))
     extension = expected.get("extension_approved")
     if extension:
         results.append(check_extension_in_baseline(repo_dir, extension))
+        results.append(check_punchout_recorded(repo_dir, f"extension_approved:{extension}"))
     return results
 
 
@@ -285,6 +308,7 @@ def score_pr_fixture(fixture_dir: Path, fixture: dict):
     expected = fixture.get("expected", {})
     results = [check_ticket_validate(repo_dir), check_baseline_validate(repo_dir), check_files(repo_dir)]
     results.append(check_pr_verdict(repo_dir, ticket_id, expected.get("final_verdict", "pass")))
+    results.append(check_gate_file(repo_dir, f"ticket-{ticket_id}.ok"))
     override_id = expected.get("override_finding_id")
     if override_id:
         results.append(check_override_recorded(repo_dir, ticket_id, override_id))

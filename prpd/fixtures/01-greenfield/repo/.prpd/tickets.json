@@ -228,6 +228,38 @@
           "at": "2026-09-24T18:57:25.251804+00:00"
         },
         "status": "overridden"
+      },
+      {
+        "id": "convention-7",
+        "engine": "convention",
+        "severity": "blocker",
+        "title": "Inline styles and hardcoded spacing on page-level <main> elements",
+        "location": {
+          "file": "src/features/manage-users/ManageUsersPage.jsx",
+          "lines": [
+            67,
+            83
+          ]
+        },
+        "description": "Both <main> elements (403 view and admin view) use inline style objects with raw values (2rem, 720px) instead of CSS Modules and the approved spacing token scale, the same violation convention-6 already established as a blocker for this file. Unlike DevControls, this is shipped production page code, not scaffolding covered by convention-6's override.",
+        "suggested_fix": "Move both <main> layouts into a CSS Modules stylesheet using --space-* tokens.",
+        "confidence": 0.9,
+        "traceability": "none",
+        "status": "fixed"
+      },
+      {
+        "id": "guardrail-challenge-1",
+        "engine": "convention",
+        "severity": "advisory",
+        "title": "convention-5/convention-6 traceability values appear swapped",
+        "location": {
+          "file": ".prpd/tickets.json",
+          "lines": []
+        },
+        "description": "convention-5 (dev controls) is recorded as traceability=baseline, but no approved baseline pattern covers dev-only scaffolding -- should be none. convention-6 (inline styles) is recorded as traceability=none, but it directly cites the baseline's approved css-modules styling convention -- should be baseline. Found by an independent adversarial guardrail pass, not the original reviewing engine.",
+        "suggested_fix": "Correct both traceability values; consider a ticket-agent/pr-agent instruction to double check traceability direction (does the FLAGGED pattern trace to approval, not whether a rule exists).",
+        "confidence": 0.8,
+        "traceability": "none"
       }
     ],
     "approved_decisions": [
@@ -235,6 +267,6 @@
       "Permission handling: non-admins see a 403-style message rather than the table.",
       "Table approved as a shared design-system extension (not a ticket-scoped exception) given likely reuse across future list screens."
     ],
-    "updated_at": "2026-09-24T18:57:25.252152+00:00"
+    "updated_at": "2026-09-24T20:12:16.880548+00:00"
   }
 }

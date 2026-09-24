@@ -18,7 +18,14 @@ overrides, and the final verdict — with model/token data when known.
 1. Fetch the PR via ADO MCP: title, description, source/target revisions,
    changed files, diff, linked work items.
 2. Identify the linked ADO ticket. If none, surface missing context — the PR
-   bypassed ticket review and that itself is a finding.
+   bypassed ticket review and that itself is a finding. Otherwise, run
+   `prpd.py guardrail ticket-to-pr <ticket-id> --repo-dir <repo>` **before**
+   reading any ticket context yourself. This is a deterministic gate: it
+   independently re-checks that the init gate hasn't gone stale (baseline
+   changed since it passed) and that the ticket actually has a recorded
+   review, then writes `.prpd/gates/ticket-<id>.ok`. If it fails, stop and
+   report exactly what it says is missing — do not proceed by reasoning
+   about the ticket yourself instead.
 3. Read prior context: `ticket get <ticket-id>` — approved intent, findings,
    extensions, exceptions. Verify the implementation against this history
    rather than rediscovering intent.
@@ -29,6 +36,9 @@ overrides, and the final verdict — with model/token data when known.
    reruns and are never deleted; a fixed or overridden finding is marked via
    `ticket resolve <ticket-id> <finding-id> --status fixed|overridden`
    (`--reasons`/`--by` required for `overridden`), not removed from history.
+   An override is itself a punch-out point (a human accepting risk instead
+   of a fix) — `ticket resolve --status overridden` automatically logs it to
+   `.prpd/punchouts.jsonl`, so no separate manual step is needed.
 
 A draft PR is a valid target: running early gives the developer a correction
 loop before marking the PR ready.

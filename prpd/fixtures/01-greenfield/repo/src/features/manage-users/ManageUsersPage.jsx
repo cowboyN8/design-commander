@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import styles from "./ManageUsersPage.module.css";
 import { Text } from "../../design-system/components/Text/Text";
 import { Table } from "../../design-system/components/Table/Table";
 import { Badge } from "../../design-system/components/Badge/Badge";
@@ -64,7 +65,7 @@ export function ManageUsersPage() {
 
   if (viewAsRole !== "admin") {
     return (
-      <main style={{ padding: "2rem" }}>
+      <main className={styles.errorPage}>
         <Text as="h1" variant="heading-1">403</Text>
         <Text variant="body" as="p">You don't have permission to view this page.</Text>
         <DevControls
@@ -80,7 +81,7 @@ export function ManageUsersPage() {
   }
 
   return (
-    <main style={{ padding: "2rem", maxWidth: "720px" }}>
+    <main className={styles.page}>
       <Text as="h1" variant="heading-1">Manage users</Text>
 
       <Table

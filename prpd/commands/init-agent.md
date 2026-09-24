@@ -43,7 +43,12 @@ Ask the user targeted questions before generating anything:
   code-first**, then process sources in that order
 - Anything else intent-dependent that evidence cannot resolve
 
-Do not ask about things the code already answers.
+Do not ask about things the code already answers. Once answered, record each
+as a punch-out point — not optional bookkeeping: `baseline set outcome` will
+mechanically refuse to finalize later without these on record. Run:
+
+    prpd.py punchout record stack_confirmed --decision "<framework + styling>" --by <user> --repo-dir <repo>
+    prpd.py punchout record accessibility_target_confirmed --decision "<target>" --by <user> --repo-dir <repo>
 
 ## Step 2 — Classify the repository
 
@@ -80,6 +85,10 @@ layer at a time in dependency order:
 
 1. Typography → 2. Color → 3. Spacing/foundational tokens → 4. Small components
    → 5. Interactive components → 6. Composites → 7. Large/page-level patterns
+
+Once the roadmap itself is approved, record it as a punch-out point:
+
+    prpd.py punchout record roadmap_approved --decision "<layer order>" --by <user> --repo-dir <repo>
 
 For each layer:
 

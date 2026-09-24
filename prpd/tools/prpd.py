@@ -24,6 +24,7 @@ Commands:
 """
 
 import argparse
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
@@ -62,6 +63,36 @@ def now_iso() -> str:
 
 def prpd_dir(repo_dir: Path) -> Path:
     return repo_dir / ".prpd"
+
+
+def gates_dir(repo_dir: Path) -> Path:
+    return prpd_dir(repo_dir) / "gates"
+
+
+def punchouts_path(repo_dir: Path) -> Path:
+    return prpd_dir(repo_dir) / "punchouts.jsonl"
+
+
+def record_punchout(repo_dir: Path, point_id: str, decision: str, by: str) -> None:
+    path = punchouts_path(repo_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entry = {"ts": now_iso(), "point_id": point_id, "decision": decision, "by": by}
+    with path.open("a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def has_punchout(repo_dir: Path, point_id: str) -> bool:
+    path = punchouts_path(repo_dir)
+    if not path.exists():
+        return False
+    for line in path.read_text().splitlines():
+        if line.strip() and json.loads(line).get("point_id") == point_id:
+            return True
+    return False
+
+
+def file_checksum(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
 
 def load_json(path: Path) -> dict:
@@ -139,6 +170,9 @@ def cmd_baseline_validate(args, repo_dir: Path) -> None:
     ok(f"{path} passed structural checks (install `jsonschema` for full schema validation)")
 
 
+REQUIRED_PUNCHOUTS_FOR_OUTCOME = ["stack_confirmed", "accessibility_target_confirmed"]
+
+
 def cmd_baseline_set(args, repo_dir: Path) -> None:
     path = prpd_dir(repo_dir) / "baseline.json"
     data = load_json(path)
@@ -146,6 +180,19 @@ def cmd_baseline_set(args, repo_dir: Path) -> None:
         value = json.loads(args.value)
     except json.JSONDecodeError:
         value = args.value
+
+    # Punch-out enforcement: finalizing an outcome is a human decision point,
+    # not a mechanical one. This is a real gate, not a prompt reminder --
+    # refuse outright if the required sign-offs were never recorded.
+    if args.field == "outcome" and value in ("ready", "ready_with_gaps"):
+        missing = [p for p in REQUIRED_PUNCHOUTS_FOR_OUTCOME if not has_punchout(repo_dir, p)]
+        if missing:
+            fail(
+                "PUNCH-OUT BLOCKED: cannot set outcome to "
+                f"{value!r} -- missing required human sign-off(s): {missing}. "
+                "Record them first with `prpd.py punchout record <point_id> --decision ... --by ...`."
+            )
+
     keys = args.field.split(".")
     node = data
     for key in keys[:-1]:
@@ -162,6 +209,21 @@ def cmd_baseline_append(args, repo_dir: Path) -> None:
         value = json.loads(args.value)
     except json.JSONDecodeError:
         fail(f"--value is not valid JSON: {args.value!r}")
+
+    # Punch-out enforcement: approving a new design-system extension is a
+    # human decision (reuse-vs-exception), not something an agent may decide
+    # unilaterally. Require the sign-off to already be on record.
+    if args.field == "components" and isinstance(value, dict):
+        source = str(value.get("source", ""))
+        if "extension" in source or "ticket-agent" in source:
+            point_id = f"extension_approved:{value.get('name')}"
+            if not has_punchout(repo_dir, point_id):
+                fail(
+                    f"PUNCH-OUT BLOCKED: cannot add component {value.get('name')!r} sourced from "
+                    f"an extension without a recorded sign-off. Record it first with "
+                    f"`prpd.py punchout record {point_id} --decision ... --by ...`."
+                )
+
     keys = args.field.split(".")
     node = data
     for key in keys[:-1]:
@@ -289,10 +351,135 @@ def cmd_ticket_resolve(args, repo_dir: Path) -> None:
         if not args.reasons or not args.by:
             fail("--reasons and --by are required to record an override")
         match["override"] = {"reasons": args.reasons, "by": args.by, "at": now_iso()}
+        # An override IS a punch-out point (a human accepting risk instead of
+        # a fix) -- log it to the same ledger automatically so there is one
+        # place to see every human decision across the whole workflow.
+        record_punchout(repo_dir, f"blocker_override:{args.finding_id}", args.reasons, args.by)
     match["status"] = args.status
     record["updated_at"] = now_iso()
     save_json(path, tickets)
     ok(f"{args.ticket_id} finding {args.finding_id} marked {args.status}")
+
+
+# ---------------------------------------------------------------- guardrails
+#
+# Guardrails are deterministic, automated checks that sit BETWEEN agent
+# steps -- not human review, and not embedded inside an agent's own
+# reasoning. A passing guardrail writes a sentinel "gate" file under
+# .prpd/gates/; the *next* agent's tooling refuses to proceed if the gate
+# for the prior step is missing or stale (checksum mismatch against the
+# file it certified). A failing guardrail writes nothing and exits 1.
+
+MIN_BASELINE_FOUNDATIONS = 1  # at least one approved/gap/legacy foundation recorded
+
+
+def cmd_guardrail_init_to_ticket(args, repo_dir: Path) -> None:
+    baseline_path = prpd_dir(repo_dir) / "baseline.json"
+    if not baseline_path.exists():
+        fail("guardrail init-to-ticket: no baseline.json -- /init-agent has not run")
+
+    data = load_json(baseline_path)
+    problems = []
+
+    if data.get("outcome") not in ("ready", "ready_with_gaps"):
+        problems.append(f"outcome is {data.get('outcome')!r}, must be ready or ready_with_gaps")
+
+    dims = data.get("dimensions", {})
+    for dim in ("figma", "coded_system", "source_relationship", "maturity"):
+        if not dims.get(dim):
+            problems.append(f"dimensions.{dim} is not set")
+
+    if not data.get("accessibility_target"):
+        problems.append("accessibility_target is not set")
+
+    if not data.get("stack", {}).get("framework"):
+        problems.append("stack.framework is not set")
+
+    if len(data.get("foundations", {})) < MIN_BASELINE_FOUNDATIONS:
+        problems.append("no foundations recorded (baseline has no approved/gap/legacy foundations)")
+
+    if problems:
+        fail("guardrail init-to-ticket BLOCKED:\n  " + "\n  ".join(problems))
+
+    gates_dir(repo_dir).mkdir(parents=True, exist_ok=True)
+    gate = {
+        "gate": "init-to-ticket",
+        "passed_at": now_iso(),
+        "baseline_outcome": data["outcome"],
+        "baseline_checksum": file_checksum(baseline_path),
+    }
+    save_json(gates_dir(repo_dir) / "init.ok", gate)
+    ok("guardrail init-to-ticket PASSED -- .prpd/gates/init.ok written")
+
+
+def cmd_guardrail_ticket_to_pr(args, repo_dir: Path) -> None:
+    init_gate_path = gates_dir(repo_dir) / "init.ok"
+    if not init_gate_path.exists():
+        fail("guardrail ticket-to-pr BLOCKED: init-to-ticket gate has not passed (.prpd/gates/init.ok missing)")
+
+    baseline_path = prpd_dir(repo_dir) / "baseline.json"
+    init_gate = load_json(init_gate_path)
+    if baseline_path.exists() and init_gate.get("baseline_checksum") != file_checksum(baseline_path):
+        fail("guardrail ticket-to-pr BLOCKED: baseline.json changed since init-to-ticket gate passed -- rerun that gate")
+
+    tickets_path = prpd_dir(repo_dir) / "tickets.json"
+    if not tickets_path.exists():
+        fail(f"guardrail ticket-to-pr BLOCKED: {tickets_path} does not exist -- /ticket-agent has not run")
+
+    tickets = load_json(tickets_path)
+    record = tickets.get(args.ticket_id)
+    if record is None:
+        fail(f"guardrail ticket-to-pr BLOCKED: no record for {args.ticket_id} in tickets.json -- "
+             f"/ticket-agent has not reviewed this ticket")
+
+    problems = []
+    for key in ("findings", "approved_decisions", "updated_at"):
+        if key not in record:
+            problems.append(f"ticket record missing required field: {key}")
+    if problems:
+        fail("guardrail ticket-to-pr BLOCKED:\n  " + "\n  ".join(problems))
+
+    gates_dir(repo_dir).mkdir(parents=True, exist_ok=True)
+    gate = {
+        "gate": "ticket-to-pr",
+        "ticket_id": args.ticket_id,
+        "passed_at": now_iso(),
+        "tickets_checksum": file_checksum(tickets_path),
+    }
+    save_json(gates_dir(repo_dir) / f"ticket-{args.ticket_id}.ok", gate)
+    ok(f"guardrail ticket-to-pr PASSED for {args.ticket_id} -- .prpd/gates/ticket-{args.ticket_id}.ok written")
+
+
+# ---------------------------------------------------------------- punch-outs
+#
+# Explicit human decision points where the workflow must stop for sign-off.
+# Distinct from guardrails (which are fully automated, zero-judgment gates):
+# a punch-out point is where the system deliberately refuses to decide on
+# its own, and the refusal is enforced in code (see cmd_baseline_set /
+# cmd_baseline_append above), not just documented as a prompt instruction.
+
+def cmd_punchout_record(args, repo_dir: Path) -> None:
+    record_punchout(repo_dir, args.point_id, args.decision, args.by)
+    ok(f"punch-out recorded: {args.point_id} (by {args.by})")
+
+
+def cmd_punchout_log(args, repo_dir: Path) -> None:
+    path = punchouts_path(repo_dir)
+    if not path.exists():
+        ok("no punch-outs recorded yet")
+        return
+    for line in path.read_text().splitlines():
+        if line.strip():
+            print(json.dumps(json.loads(line), indent=2))
+
+
+def cmd_guardrail_status(args, repo_dir: Path) -> None:
+    gdir = gates_dir(repo_dir)
+    if not gdir.exists() or not any(gdir.iterdir()):
+        ok("no gates have passed yet")
+        return
+    for gate_file in sorted(gdir.iterdir()):
+        print(json.dumps(json.loads(gate_file.read_text()), indent=2))
 
 
 def cmd_audit(args, repo_dir: Path) -> None:
@@ -328,6 +515,12 @@ def main() -> None:
 
     p_tick = sub.add_parser("ticket", help="tickets.json operations")
     tick_sub = p_tick.add_subparsers(dest="command", required=True)
+
+    p_guard = sub.add_parser("guardrail", help="deterministic between-step gates (see GUARDRAILS.md)")
+    guard_sub = p_guard.add_subparsers(dest="command", required=True)
+
+    p_punch = sub.add_parser("punchout", help="explicit human decision points (see PUNCHOUTS.md)")
+    punch_sub = p_punch.add_subparsers(dest="command", required=True)
 
     p_new = base_sub.add_parser("new", parents=[common], help="create skeleton baseline.json")
     p_new.add_argument("repo_name")
@@ -376,6 +569,31 @@ def main() -> None:
     p_tres.add_argument("--reasons", help="required when --status overridden")
     p_tres.add_argument("--by", help="required when --status overridden")
     p_tres.set_defaults(func=cmd_ticket_resolve)
+
+    p_gi2t = guard_sub.add_parser(
+        "init-to-ticket", parents=[common],
+        help="deterministic gate: refuses unless baseline is ready/ready_with_gaps and complete; writes .prpd/gates/init.ok",
+    )
+    p_gi2t.set_defaults(func=cmd_guardrail_init_to_ticket)
+
+    p_gt2p = guard_sub.add_parser(
+        "ticket-to-pr", parents=[common],
+        help="deterministic gate: refuses unless init.ok exists and the ticket has recorded findings/decisions; writes .prpd/gates/ticket-<id>.ok",
+    )
+    p_gt2p.add_argument("ticket_id")
+    p_gt2p.set_defaults(func=cmd_guardrail_ticket_to_pr)
+
+    p_gstat = guard_sub.add_parser("status", parents=[common], help="print all gates that have passed")
+    p_gstat.set_defaults(func=cmd_guardrail_status)
+
+    p_prec = punch_sub.add_parser("record", parents=[common], help="record a human decision at an explicit punch-out point")
+    p_prec.add_argument("point_id")
+    p_prec.add_argument("--decision", required=True)
+    p_prec.add_argument("--by", required=True)
+    p_prec.set_defaults(func=cmd_punchout_record)
+
+    p_plog = punch_sub.add_parser("log", parents=[common], help="print every recorded punch-out decision")
+    p_plog.set_defaults(func=cmd_punchout_log)
 
     p_audit = sub.add_parser("audit", parents=[common], help="emit an audit event to audit.jsonl")
     p_audit.add_argument("event", help="event name, e.g. layer_approved, question_asked")
