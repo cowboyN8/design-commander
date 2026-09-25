@@ -629,9 +629,13 @@ For `pr` fixtures:
 
 It exits non-zero if any check fails, and separately lists which `expected.behaviors` entries it does **not** cover, since those describe process during a run (e.g. "asks stack questions before generating code") rather than the finished repo state, and cannot be verified from artifacts alone.
 
-This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user. Whether and how to add an automated, unattended run (an agent executing a command against a fixture using its `user_simulation` block, without a human approving each step) is still **Open** — everything in this system runs locally in Devin, so this would not require external orchestration, but the approach for scripting the simulated-user side is undecided.
+This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user.
 
-Remaining open items: mechanical or LLM-assisted verification of process-level `behaviors`, and the automated-run approach above.
+`prpd/tools/local_runner.py` prepares an isolated work directory for an unattended Devin replay of a fixture. It reads the fixture's `user_simulation` answers, extracts the fixture's repo to its `initial_ref` (or copies the current committed repo), and writes a `REPLAY.md` prompt. A Devin agent (or subagent) executes the replay prompt without human input, using the provided answers for every agent question and recording punch-outs as `unattended-runner`. After completing the agent work, the runner verifies the work directory against the fixture's `expected` block with `run_fixture.py`.
+
+The full `greenfield-manage-users` chain (init → ticket → PR) has been replayed once from initial git refs to a passing end state. The resulting work directory passed mechanical checks for `01-greenfield`, `02-ticket-new-page`, and `03-pr-manage-users`.
+
+Remaining open items: mechanical or LLM-assisted verification of process-level `behaviors` (the runner currently validates end-state artifacts only), and accumulating repeated-trial data across separate sessions.
 
 ## 11. Audit trail
 

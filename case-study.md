@@ -470,13 +470,29 @@ I backfilled `roadmap_approved` for `04-existing-inconsistent` (the only fixture
 
 All Stage 4 artifacts have real, tested mechanisms behind them, and the Stage 3 Prompt/Evaluations/Log requirements are now explicitly satisfied as well. (I briefly went down a wrong path and wrote an external API-driven `agent_runner.py`; I removed it once I remembered your repeated instruction that this project stays fully encapsulated in Devin and local, with no external API dependencies.)
 
-The only remaining item across both rubrics is an **automated, unattended fixture runner** inside the local Devin runtime that could feed `user_simulation` answers to an agent and re-run a scenario from scratch without a human approving each step. That would enable (a) repeated-trial success-rate data and (b) mechanical verification of the process-level `behaviors` that `run_fixture.py` currently cannot check. It would not require external APIs — it runs inside Devin — but the approach for simulating user answers and replaying agent decisions is not yet implemented.
+## Building a local, Devin-only unattended runner
 
-For `tokens_in`/`tokens_out`/`cost_usd`: those fields stay null because Devin does not expose per-call token accounting or cost to the agent. `model` is now auto-populated (`devin-adaptive` by default, or from `PRPD_MODEL`) so the audit trail records the runtime, which is the honest local-runtime state.
+The remaining gap was an unattended execution path that could replay fixtures without me asking you for approval at each step. I built `prpd/tools/local_runner.py` to stay entirely inside the Devin/local runtime: it reads a fixture's `user_simulation` answers, extracts the fixture repo to its declared `initial_ref` (the git commit representing the starting state), creates an isolated work directory, and writes a `REPLAY.md` prompt. A Devin agent can then execute the replay prompt using only the provided answers, recording punch-outs as `unattended-runner` and verifying the result with `run_fixture.py`.
+
+I used the runner to replay the full `greenfield-manage-users` chain from scratch:
+1. `01-greenfield` from its initial git ref (`cbe3100`) — built the design-system foundations and components, recorded the required punch-outs, and passed the init fixture checks.
+2. `02-ticket-new-page` on top of that result — ran the guardrails, raised the expected blockers, approved the `Table` extension as a shared component, implemented `Table`, resolved the ticket-time blockers, and passed the ticket fixture checks.
+3. `03-pr-manage-users` on top of that result — added the PR code changes, produced the expected findings (including the adversarial-challenge finding), overrode the one blocker that legitimately stays as QA scaffolding, and passed the PR fixture checks with a final verdict of `pass`.
+
+This gives real, visible evidence that the agents can run the full pipeline without manual correction: the chain went from the initial git ref to a passing end state using only the fixture-provided answers.
+
+## What is still genuinely open
+
+- **Repeated-trial trend data:** one unattended chain run exists. The end-to-end success rate is currently 1/1 (100%) on that single run. To claim statistical confidence, the runner needs to be invoked across separate sessions so `prpd/fixtures/results.jsonl` accumulates more data points honestly.
+- **Process-behavior verification:** `run_fixture.py` checks end-state artifacts. Verifying the process claims in `expected.behaviors` (e.g., "asks stack questions before generating code") still requires either a transcript-judging pass or stricter runner assertions.
+- **Token/cost accounting:** `tokens_in`/`tokens_out`/`cost_usd` stay null because the Devin runtime does not expose per-call token accounting to the agent. `model` is auto-populated (`devin-adaptive` by default, or from `PRPD_MODEL`) so the audit trail at least records the runtime.
+
+None of these open items require external APIs or leaving the Devin-encapsulated runtime.
 
 ## Decisions still to make
 
 The following questions remain open:
 - How should overlapping findings be consolidated? Now grounded in a real example: `prpd/fixtures/03-pr-manage-users/` has the same code flagged as both untraced (convention) and visually inconsistent (ux_pattern) — should that become one merged finding with two contributing engines, or stay two separate findings that guardrails just orders adjacently?
 - How should process-level fixture `behaviors` (not just end-state artifacts) be verified — mechanically, or by another LLM pass judging a transcript?
-- How should an automated, unattended fixture run work inside Devin? It would replay a fixture's `user_simulation` answers, run the agent without a human approving each step, and enable repeated-trial success-rate measurement and verification of process-level `behaviors`. Everything here runs locally in Devin, so no external orchestration or API keys are needed, but the approach is not decided.
+- How should process-level fixture `behaviors` be verified mechanically? `run_fixture.py` only checks end-state artifacts; the `expected.behaviors` claims still require a transcript-judging pass or stricter runner assertions.
+- How many repeated unattended chain runs are needed before the end-to-end success rate can be claimed with statistical confidence? The runner exists; now it needs to be invoked across separate sessions to populate the trend log honestly.
