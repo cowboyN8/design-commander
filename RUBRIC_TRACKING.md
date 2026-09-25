@@ -1,9 +1,11 @@
 # PR Pattern Detective — Certification Rubric Tracking
 
-This file tracks the project against the Stage 4 certification requirements shown in the original rubric image. It is a living checklist: update it as gaps close or new ones are discovered.
+This file tracks the project against both the **Stage 3** and **Stage 4** certification requirements shown in the rubric images. It is a living checklist: update it as gaps close or new ones are discovered.
 
 **Last updated:** 2026-09-25
-**Current assessment:** 5 required artifacts exist; 3 are partially complete, 2 are functionally complete but still growing evidence.
+**Current assessment:**
+- **Stage 3:** Prompt files exist, evaluation script exists, but load-bearing audit, mid-tier model verification, and a dedicated iteration log are missing or incomplete.
+- **Stage 4:** All 5 required artifacts exist; 3 are partially complete, 2 are functionally complete but still growing evidence.
 
 ---
 
@@ -17,6 +19,53 @@ This file tracks the project against the Stage 4 certification requirements show
 | 🔄 | In progress — currently being worked |
 
 ---
+
+# Stage 3 Certification: The Prompt, The Evaluations, The Log
+
+## Stage 3 — The Prompt
+
+| Requirement | Status | Evidence / Location | Open Gap |
+|---|---|---|---|
+| Markdown file containing the practitioner's prompt or command | ✅ | `prpd/commands/init-agent.md`, `prpd/commands/ticket-agent.md`, `prpd/commands/pr-agent.md`, `prpd/commands/guardrail-challenge.md` | None |
+| Follows structured prompting (RTCC or similar) | 🟡 | Prompts use role, task, context, constraints, step numbering, tool-call conventions, and explicit output schemas | No formal RTCC audit performed; structure is present but not labeled against a standard |
+| Demonstrates deliberate instruction design | ✅ | Each prompt is purpose-built for its stage and references the mechanical helper, schema, and confidence thresholds | None |
+| Load-Bearing Principle: ≥90% of instructions must be load-bearing | ❌ | Not measured | Audit each prompt line against the evaluation criteria in `run_fixture.py` / `fixture.json`; remove or justify any instruction that does not serve an evaluation |
+| No dead weight or filler text | 🟡 | Prompts are concise but have not been audited for filler | Same load-bearing audit will surface filler |
+
+**Stage 3 Prompt verdict:** Prompts exist and are well-structured ✅, but the quantitative load-bearing audit has not been performed ❌.
+
+---
+
+## Stage 3 — The Evaluations
+
+| Requirement | Status | Evidence / Location | Open Gap |
+|---|---|---|---|
+| Scripts, Promptfoo YAML configs, or documented test cases | ✅ | `prpd/tools/run_fixture.py` plus per-fixture `fixture.json` expected blocks | None |
+| ≥3 distinct evaluation criteria (not variations of the same check) | ✅ | baseline validity, file existence, build success, audit well-formedness, ticket findings/decisions/overrides, PR verdict, guardrail gate files, punch-out records, traceability — all distinct | None |
+| Substantive quality checks, not window dressing | ✅ | Checks validate real invariants (contrast ratios, component reuse, required build outputs, gate checksums, traceable failures) | None |
+| Capable of producing 95%+ scores when the prompt performs well | 🟡 | Current fixture pass rate is 4/4 (100%) on hardened artifacts | Rate is on a single pass of 4 fixtures, not repeated prompt runs; needs repeated trials on the same scenarios |
+| Runs on mid-tier models or lower (Sonnet, GPT-4) — no frontier model requirement | ❌ | All work done via Devin/Adaptive routing layer | Verify `prpd.py` + prompts run correctly on an explicit Sonnet/GPT-4 backend; document results |
+| Clear pass/fail thresholds or scoring rubrics | ✅ | `run_fixture.py` returns 0/1 per fixture and per chain; `fixture.json` has `expected` block with explicit criteria | None |
+
+**Stage 3 Evaluations verdict:** Evaluation script and criteria are real ✅, but repeated-trial rate and mid-tier model verification are missing ❌.
+
+---
+
+## Stage 3 — The Log
+
+| Requirement | Status | Evidence / Location | Open Gap |
+|---|---|---|---|
+| An iteration log showing evidence of prompt evolution | 🟡 | `case-study.md` narrates evolution chronologically | No dedicated iteration log in the exact rubric format with per-iteration scores, hypothesis, change, measured results, reasoning |
+| ≥2 documented iterations minimum | ✅ | `case-study.md` contains far more than 2 development phases | None, once format is corrected |
+| Each iteration includes: baseline scores, hypothesis, change made, measured results, and reasoning | ❌ | `case-study.md` has reasoning and changes, but not explicit baseline scores per iteration | Create `ITERATION_LOG.md` with one entry per major phase, including the required fields |
+| Evidence of EDD discipline (Red/Green/Refactor cycle) | ✅ | Many examples: tests/checks written first, failing, then fixed (guardrail bypass tests, fixture discrimination, traceability enforcement) | None, once documented in iteration format |
+| Chronological progression with cause-and-effect | ✅ | `case-study.md` is chronological and explains why each change followed from prior evidence | None, once documented in iteration format |
+
+**Stage 3 Log verdict:** The *content* of an iteration log exists across `case-study.md` and commit history ✅, but it is not assembled into a single artifact matching the rubric's required fields ❌.
+
+---
+
+# Stage 4 Certification: Five Required Artifacts
 
 ## 1. Workflow Definition
 
@@ -96,7 +145,17 @@ This file tracks the project against the Stage 4 certification requirements show
 
 ---
 
-## Overall Tally
+# Combined Overall Tally
+
+## Stage 3
+
+| Artifact | Overall | Blockers to Close It |
+|---|---|---|
+| The Prompt | 🟡 | Load-bearing audit of every instruction; remove/justify filler |
+| The Evaluations | 🟡 | Repeated-trial pass rate on same fixtures; mid-tier model verification |
+| The Log | 🟡 | Create `ITERATION_LOG.md` in the required format with baseline scores per iteration |
+
+## Stage 4
 
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
@@ -106,7 +165,13 @@ This file tracks the project against the Stage 4 certification requirements show
 | End-to-End Success Rate | 🟡 | Repeated trials; unattended-new-scenario measurement |
 | Audit Trail | 🟡 | API-driven execution wrapper to populate model/token/cost |
 
-**Honest bottom line:** Every required artifact now has a real, tested mechanism behind it, and every remaining gap is documented rather than hidden. The remaining work is not building new artifacts — it is growing evidence and closing specific, named sub-gaps.
+---
+
+## Honest Bottom Line
+
+**Stage 3:** The raw material is present (prompts, evaluation script, commit history), but the presentation requirements — especially the load-bearing audit and the formatted iteration log — have not been assembled into artifacts that directly match the rubric.
+
+**Stage 4:** Every required artifact now has a real, tested mechanism behind it, and every remaining gap is documented rather than hidden. The remaining work is not building new artifacts — it is growing evidence and closing specific, named sub-gaps.
 
 ---
 
@@ -114,4 +179,5 @@ This file tracks the project against the Stage 4 certification requirements show
 
 | Date | Change |
 |---|---|
-| 2026-09-25 | Initial rubric tracking checklist created after completing the five-artifact hardening pass. |
+| 2026-09-25 | Initial rubric tracking checklist created after completing the Stage 4 five-artifact hardening pass. |
+| 2026-09-25 | Added Stage 3 requirements (The Prompt, The Evaluations, The Log) after receiving both rubric images. |
