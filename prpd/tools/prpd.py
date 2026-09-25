@@ -173,6 +173,11 @@ def cmd_baseline_validate(args, repo_dir: Path) -> None:
 REQUIRED_PUNCHOUTS_FOR_OUTCOME = ["stack_confirmed", "accessibility_target_confirmed"]
 
 
+def source_needs_reconciliation(data: dict) -> bool:
+    rel = data.get("dimensions", {}).get("source_relationship", "")
+    return rel in ("drifted", "authority_unclear")
+
+
 def cmd_baseline_set(args, repo_dir: Path) -> None:
     path = prpd_dir(repo_dir) / "baseline.json"
     data = load_json(path)
@@ -192,6 +197,27 @@ def cmd_baseline_set(args, repo_dir: Path) -> None:
                 f"{value!r} -- missing required human sign-off(s): {missing}. "
                 "Record them first with `prpd.py punchout record <point_id> --decision ... --by ...`."
             )
+        # If sources disagree, recording the reconciliation decision is also a
+        # required human sign-off before the baseline can be finalized.
+        if source_needs_reconciliation(data) and not has_punchout(repo_dir, "reconciliation_decision"):
+            fail(
+                "PUNCH-OUT BLOCKED: cannot set outcome to "
+                f"{value!r} -- dimensions.source_relationship is "
+                f"{data['dimensions']['source_relationship']!r} but no reconciliation_decision "
+                "was recorded. Record it first with `prpd.py punchout record reconciliation_decision "
+                "--decision ... --by ...`."
+            )
+
+    # Setting the source-relationship to a conflicted value itself requires a
+    # recorded reconciliation decision before the write is accepted.
+    if args.field == "dimensions.source_relationship" and value in ("drifted", "authority_unclear"):
+        if not has_punchout(repo_dir, "reconciliation_decision"):
+            fail(
+                "PUNCH-OUT BLOCKED: cannot set dimensions.source_relationship to "
+                f"{value!r} without a recorded reconciliation_decision. "
+                "Record it first with `prpd.py punchout record reconciliation_decision "
+                "--decision ... --by ...`."
+            )
 
     keys = args.field.split(".")
     node = data
@@ -210,6 +236,25 @@ def cmd_baseline_append(args, repo_dir: Path) -> None:
     except json.JSONDecodeError:
         fail(f"--value is not valid JSON: {args.value!r}")
 
+    # Punch-out enforcement: building layers requires an approved roadmap
+    # (the order in which foundations and components are established). This is
+    # an init-time decision, distinct from per-extension approvals.
+    if args.field in ("foundations", "components"):
+        source = str(value.get("source", "")) if isinstance(value, dict) else ""
+        # Extension-sourced components still require the per-extension approval,
+        # but they do not also require the init roadmap approval because the
+        # extension workflow is a separate sign-off.
+        is_extension_source = "extension" in source or "ticket-agent" in source
+        if args.field == "components" and is_extension_source:
+            pass  # roadmap approval not required; extension_approved checked below
+        elif not has_punchout(repo_dir, "roadmap_approved"):
+            fail(
+                "PUNCH-OUT BLOCKED: cannot add "
+                f"{args.field} without a recorded roadmap_approved sign-off. "
+                "Record it first with `prpd.py punchout record roadmap_approved "
+                "--decision ... --by ...`."
+            )
+
     # Punch-out enforcement: approving a new design-system extension is a
     # human decision (reuse-vs-exception), not something an agent may decide
     # unilaterally. Require the sign-off to already be on record.
@@ -223,6 +268,18 @@ def cmd_baseline_append(args, repo_dir: Path) -> None:
                     f"an extension without a recorded sign-off. Record it first with "
                     f"`prpd.py punchout record {point_id} --decision ... --by ...`."
                 )
+
+    # Punch-out enforcement: recording reconciled sources when Figma/code
+    # disagree requires the component-by-component decision to be on record first.
+    if args.field == "sources" and source_needs_reconciliation(data):
+        if not has_punchout(repo_dir, "reconciliation_decision"):
+            fail(
+                "PUNCH-OUT BLOCKED: cannot append sources while "
+                "dimensions.source_relationship is "
+                f"{data['dimensions']['source_relationship']!r} without a recorded "
+                "reconciliation_decision. Record it first with `prpd.py punchout record "
+                "reconciliation_decision --decision ... --by ...`."
+            )
 
     keys = args.field.split(".")
     node = data

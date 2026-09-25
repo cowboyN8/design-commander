@@ -73,7 +73,13 @@ When Figma and code disagree:
 1. Present the specific differences.
 2. Ask whether Figma, code, or a component-by-component decision represents
    the intended future state.
-3. Record the answer via `sources[].authority`/`scope` and component `status`.
+3. Once the user approves the component-by-component reconciliation,
+   record it as a punch-out point **before** writing reconciled sources or
+   dimensions:
+
+       prpd.py punchout record reconciliation_decision --decision "<what was decided and why>" --by <user> --repo-dir <repo>
+
+4. Record the answer via `sources[].authority`/`scope` and component `status`.
 
 Never assume a source wins silently. Never treat frequency as correctness —
 repeated patterns may be legacy, not precedent; mark them `legacy`.

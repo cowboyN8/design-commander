@@ -2,7 +2,9 @@
 
 This is the canonical description of the end-to-end, multi-step workflow connecting the three validated agents. It is the single artifact that answers "how are the agents wired together, and what has to be true to move from one to the next."
 
-Status note: the **Guardrails** and **Punch-Out** sections below describe the mechanisms as built as of this document's last update. See `GUARDRAILS.md` and the punch-out sections of each command file for their full specs; this file only summarizes how they sit *between* the three agents.
+Status note: the **Guardrails** and **Punch-Out** sections below describe the mechanisms as built as of this document's last update. See `GUARDRAILS.md` and the punch-out sections of each command file for their full specs.
+
+One distinction matters for Stage 4 certification: **guardrails sit between agent invocations** (deterministic, no human judgment), while **punch-out points happen inside an agent step** (human decisions that must be recorded before that step's outputs become final). A punch-out is not a handoff review between agents; it is the agent step pausing for input that only a human can provide, then continuing and producing artifacts that the next automated guardrail can verify.
 
 ## 1. The three agents
 

@@ -1,6 +1,8 @@
 # PR Pattern Detective — Guardrails
 
-Guardrails are deterministic, automated checks that sit **between** agent steps. They are not a human reviewing the prior step's output (that is a punch-out point — see `PUNCHOUTS.md`), and they are not embedded inside an agent's own reasoning (that would make them as trustworthy as the agent's compliance with its own prompt, which is not verifiable). Two distinct mechanisms exist:
+Guardrails are deterministic, automated checks that sit **between** agent invocations — e.g., after `/init-agent` finishes and before `/ticket-agent` runs. They are not a human reviewing the prior step's output, and they are not embedded inside an agent's own reasoning (that would make them as trustworthy as the agent's compliance with its own prompt, which is not verifiable). Two distinct mechanisms exist:
+
+**Important distinction for Stage 4:** human judgment is required at *punch-out points* inside an agent step (see `PUNCHOUTS.md`) because some questions have no deterministic answer (which source wins a conflict, whether to accept risk instead of a fix). The *handoff* from one completed agent step to the next is fully automated: a guardrail gate verifies required artifacts and writes a sentinel. Punch-out decisions are recorded as part of the agent step that produces the artifact; the subsequent guardrail does not ask a human, it only checks that the required artifact + decisions exist.
 
 ## 1. Deterministic gates (mechanical, zero judgment)
 

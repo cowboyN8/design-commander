@@ -245,6 +245,10 @@ def score_init_fixture(fixture_dir: Path, fixture: dict):
     results.append(check_failures_traceable(repo_dir))
     results.append(check_punchout_recorded(repo_dir, "stack_confirmed"))
     results.append(check_punchout_recorded(repo_dir, "accessibility_target_confirmed"))
+    results.append(check_punchout_recorded(repo_dir, "roadmap_approved"))
+    rel = baseline.get("dimensions", {}).get("source_relationship")
+    if rel in ("drifted", "authority_unclear"):
+        results.append(check_punchout_recorded(repo_dir, "reconciliation_decision"))
     return results
 
 
