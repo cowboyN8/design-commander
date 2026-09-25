@@ -1,0 +1,32 @@
+{
+  "id": "06-landing-ticket",
+  "stage": "ticket",
+  "description": "Ticket requesting a simple landing page that uses only existing approved components (Button, Text/typography). Tests the clean, no-blocker path: ticket review finds no new component or pattern gap and marks the ticket ready.",
+  "target_repo": "../05-landing-init/repo",
+  "ticket": {
+    "id": "TICKET-201",
+    "title": "Add a landing page",
+    "description": "Add a simple landing page with a heading, a short description, and a primary Button that links to the invite flow. This page should use only existing approved components.",
+    "acceptance_criteria": [
+      "Heading reads 'Welcome'",
+      "Description explains the app purpose",
+      "Primary Button labeled 'Invite people' using the approved Button component"
+    ],
+    "linked_figma": null,
+    "related_work_items": []
+  },
+  "expected": {
+    "readiness_verdict": "ready",
+    "expected_findings": [],
+    "behaviors": [
+      "uses existing approved components (Button) without requiring new extensions",
+      "records the ticket and approved decisions in tickets.json",
+      "records no blockers when no new component or pattern is needed",
+      "ticket validate passes at end of run"
+    ]
+  },
+  "user_simulation": {
+    "notes": "Expected answers a simulated user would give during this ticket review.",
+    "landing_page_pattern": "approve: simple page pattern built from existing Button and typography components"
+  }
+}

@@ -18,10 +18,11 @@ An individual fixture (e.g. `03-pr-manage-users`) only proves one *stage* works.
 | Chain | Fixtures | Status |
 |---|---|---|
 | `greenfield-manage-users` | `01-greenfield` → `02-ticket-new-page` → `03-pr-manage-users` | **PASS** |
+| `greenfield-landing-page` | `05-landing-init` → `06-landing-ticket` → `07-landing-pr-clean` | **PASS** |
 
-A chain only counts as passing if **every** fixture in it currently passes — one broken link fails the whole chain, not just its own score. This was verified directly: setting `01-greenfield`'s `outcome` to `blocked` (simulating an init regression) correctly dropped the chain result to `0/1 (0%)`, and correctly returned to `1/1 (100%)` once restored. That's the concrete proof this is measuring the full pipeline, not averaging isolated per-step numbers that could each look fine while the pipeline as a whole is actually broken.
+A chain only counts as passing if **every** fixture in it currently passes — one broken link fails the whole chain, not just its own score. This was verified directly: setting `01-greenfield`'s `outcome` to `blocked` (simulating an init regression) correctly dropped the chain result to `0/2 (0%)` when two chains were defined, and correctly returned to `2/2 (100%)` once restored. That's the concrete proof this is measuring the full pipeline, not averaging isolated per-step numbers that could each look fine while the pipeline as a whole is actually broken.
 
-The chain has also been replayed unattended multiple times from its initial git refs using `prpd/tools/chain_executor.py` (a deterministic replay of the same prpd.py commands and file operations an agent would perform) without human approval between steps. Results are logged in `prpd/fixtures/chain-runs.jsonl`:
+Both chains have also been replayed unattended from their initial git refs using `prpd/tools/chain_executor.py` (a deterministic replay of the same prpd.py commands and file operations an agent would perform) without human approval between steps. Results are logged in `prpd/fixtures/chain-runs.jsonl`:
 
 ```
 $ cat prpd/fixtures/chain-runs.jsonl

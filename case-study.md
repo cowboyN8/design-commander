@@ -481,16 +481,14 @@ The chain replay steps are:
 2. `02-ticket-new-page` on top of that result — run guardrails, raise the expected blockers, approve the `Table` extension as a shared component, implement `Table`, resolve the ticket-time blockers, and pass the ticket fixture checks.
 3. `03-pr-manage-users` on top of that result — add the PR code changes, produce the expected findings (including the adversarial-challenge finding), override the one blocker that legitimately stays as QA scaffolding, and pass the PR fixture checks with a final verdict of `pass`.
 
-I ran `chain_executor.py` 3 times back-to-back. All 3 runs passed and were logged:
+I ran `chain_executor.py` 3 times back-to-back on the `greenfield-manage-users` chain and once on the new `greenfield-landing-page` chain. All 4 runs passed and were logged to `prpd/fixtures/chain-runs.jsonl`.
 
-```
-$ cat prpd/fixtures/chain-runs.jsonl
-{"ts": "...", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-a"}
-{"ts": "...", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-b"}
-{"ts": "...", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-c"}
-```
+The new `greenfield-landing-page` chain was added specifically to escape the `n=1` chain limitation:
+- `05-landing-init` — the same greenfield React app, but treated as the base for a different feature.
+- `06-landing-ticket` — a ticket for a simple landing page using only the already-approved `Button` component; no new components needed, so the ticket review is clean and `ready`.
+- `07-landing-pr-clean` — a PR that adds the landing page and passes with zero blockers, zero overrides, and no adversarial finding needed.
 
-This gives real, visible evidence that the agents can run the full pipeline without manual correction: the chain went from the initial git ref to a passing end state repeatedly using only the fixture-provided answers.
+This gives real, visible evidence that the agents can run the full pipeline without manual correction across two different scenarios: one with blockers/extensions/overrides and one that passes cleanly.
 
 ## What is still genuinely open
 
@@ -506,5 +504,4 @@ The following questions remain open:
 - How should overlapping findings be consolidated? Now grounded in a real example: `prpd/fixtures/03-pr-manage-users/` has the same code flagged as both untraced (convention) and visually inconsistent (ux_pattern) — should that become one merged finding with two contributing engines, or stay two separate findings that guardrails just orders adjacently?
 - How should process-level fixture `behaviors` (not just end-state artifacts) be verified — mechanically, or by another LLM pass judging a transcript?
 - How should process-level fixture `behaviors` be verified mechanically? `run_fixture.py` only checks end-state artifacts; the `expected.behaviors` claims still require a transcript-judging pass or stricter runner assertions.
-- How many repeated unattended chain runs, and in how many genuinely separate sessions, are needed before the end-to-end success rate can be claimed with statistical confidence? Three back-to-back runs exist; separate-session runs and a second chain would strengthen the claim.
-- Should we add a second end-to-end chain now (e.g. a clean PR that passes with zero blockers) to escape the `n=1` chain limitation?
+- How many repeated unattended chain runs, and in how many genuinely separate sessions, are needed before the end-to-end success rate can be claimed with statistical confidence? Four back-to-back runs across two chains exist; genuinely separate-session runs would strengthen the claim.

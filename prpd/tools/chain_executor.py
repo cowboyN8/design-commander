@@ -337,9 +337,38 @@ def run_pr_stage(ticket_repo: Path, work_dir: Path) -> Path:
     return repo_dir
 
 
+def run_landing_ticket_stage(init_repo: Path, work_dir: Path) -> Path:
+    repo_dir = setup_stage("ticket-agent", "06-landing-ticket", work_dir / "ticket", previous=init_repo.parent)
+
+    prpd(["guardrail", "init-to-ticket", "--step", "ticket.guardrail"], repo_dir)
+
+    cmd = [
+        "ticket", "upsert", "TICKET-201",
+        "--decision", "landing page is a simple page pattern built from existing Button and typography components",
+        "--step", "ticket.readiness",
+    ]
+    prpd(cmd, repo_dir)
+
+    prpd(["guardrail", "init-to-ticket", "--step", "ticket.guardrail"], repo_dir)
+    prpd(["guardrail", "ticket-to-pr", "TICKET-201", "--step", "ticket.guardrail"], repo_dir)
+
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "06-landing-ticket")])
+    return repo_dir
+
+
+def run_landing_pr_stage(ticket_repo: Path, work_dir: Path) -> Path:
+    repo_dir = setup_stage("pr-agent", "07-landing-pr-clean", work_dir / "pr", previous=ticket_repo.parent)
+    # App.jsx is already part of the landing-init final state (clean PR that landed).
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "07-landing-pr-clean")])
+    return repo_dir
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work-root", required=True, type=Path, help="root directory for this chain run")
+    parser.add_argument("--chain", default="greenfield-manage-users",
+                        choices=["greenfield-manage-users", "greenfield-landing-page"],
+                        help="which chain to execute")
     args = parser.parse_args()
 
     work_root = Path(args.work_root).resolve()
@@ -347,18 +376,24 @@ def main() -> None:
         shutil.rmtree(work_root)
     work_root.mkdir(parents=True)
 
-    print(f"\n=== Chain run: {work_root} ===\n")
+    print(f"\n=== Chain run: {args.chain} @ {work_root} ===\n")
 
-    init_repo = run_init_stage(work_root / "init")
-    print("\n--- init stage passed ---\n")
+    if args.chain == "greenfield-manage-users":
+        init_repo = run_init_stage(work_root / "init")
+        print("\n--- init stage passed ---\n")
+        ticket_repo = run_ticket_stage(init_repo, work_root / "ticket")
+        print("\n--- ticket stage passed ---\n")
+        pr_repo = run_pr_stage(ticket_repo, work_root / "pr")
+        print("\n--- pr stage passed ---\n")
+    elif args.chain == "greenfield-landing-page":
+        init_repo = run_init_stage(work_root / "init")
+        print("\n--- init stage passed ---\n")
+        ticket_repo = run_landing_ticket_stage(init_repo, work_root / "ticket")
+        print("\n--- ticket stage passed ---\n")
+        pr_repo = run_landing_pr_stage(ticket_repo, work_root / "pr")
+        print("\n--- pr stage passed ---\n")
 
-    ticket_repo = run_ticket_stage(init_repo, work_root / "ticket")
-    print("\n--- ticket stage passed ---\n")
-
-    pr_repo = run_pr_stage(ticket_repo, work_root / "pr")
-    print("\n--- pr stage passed ---\n")
-
-    log_chain_run("greenfield-manage-users", True, work_root)
+    log_chain_run(args.chain, True, work_root)
     print(f"\nAll three stages passed. Work root: {work_root}")
     print(f"Logged chain run to {CHAIN_RUNS_LOG}")
     print("Run `python3 prpd/tools/run_fixture.py --all` to append the committed fixture result to the trend log.")

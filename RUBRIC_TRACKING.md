@@ -121,12 +121,12 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Measures the full workflow, not per-step accuracy | [x] | `prpd/fixtures/chains.json`; `run_fixture.py --all` scores chains, not fixture averages | None |
 | Verdict changes when a real link breaks | [x] | Demonstrated: corrupting `01-greenfield` dropped rate from 100% to 0% | None |
 | Trend log append-only | [x] | `prpd/fixtures/results.jsonl` | None |
-| Statistical confidence from repeated independent trials | [~] | 3 unattended deterministic chain replays passed back-to-back in one session, logged to `prpd/fixtures/chain-runs.jsonl` | Run in genuinely separate Devin sessions; ideally 3+ separate-session passes |
-| Measurement of agent success on new, unseen scenarios | [~] | One chain replayed successfully from initial git ref to passing end state | Add at least 1 more end-to-end chain to escape `n=1` |
+| Statistical confidence from repeated independent trials | [~] | 4 unattended deterministic chain replays passed (3 for `greenfield-manage-users`, 1 for `greenfield-landing-page`), logged to `prpd/fixtures/chain-runs.jsonl` | Run in genuinely separate Devin sessions; ideally 3+ separate-session passes per chain |
+| Measurement of agent success on new, unseen scenarios | [~] | Two end-to-end chains now exist (`greenfield-manage-users` and `greenfield-landing-page`); both passed their first unattended replay | More chains and repeated runs needed for a robust rate |
 
-**Current number:** 1/1 end-to-end chains passing (100%) — honestly caveated as a single-chain sample.
+**Current number:** 2/2 end-to-end chains passing (100%) — honestly caveated as a small, same-session sample.
 
-**Artifact 4 verdict:** The mechanism is real and the current number is honestly reported [x]. The rubric's deeper implication (repeated, statistically meaningful, unattended success) is not yet satisfied [ ].
+**Artifact 4 verdict:** The mechanism is real and the current number is honestly reported [x]. The rubric's deeper implication (repeated, statistically meaningful, unattended success across diverse scenarios) is partially satisfied [~] by two chains and four replays.
 
 ---
 
@@ -160,10 +160,10 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
-| Workflow Definition | [~] | 3 unattended chain replays passed back-to-back; needs separate-session runs and broader scenario coverage |
+| Workflow Definition | [~] | 4 unattended chain replays across 2 chains; broader scenario coverage still limited |
 | Guardrails | [x] | None |
 | Punch-Out Evidence | [x] | None (identity verification is a known limitation, not a certification blocker for this trust model) |
-| End-to-End Success Rate | [~] | 3 chain replays logged; still `n=1` chain and same-session runs |
+| End-to-End Success Rate | [~] | 4 chain replays logged across 2 chains; still same-session runs |
 | Audit Trail | [~] | Token/cost data not available in local Devin runtime |
 
 ---

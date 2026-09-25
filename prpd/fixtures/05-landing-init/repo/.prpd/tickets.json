@@ -1,0 +1,19 @@
+{
+  "TICKET-201": {
+    "id": "TICKET-201",
+    "title": "Add a landing page",
+    "description": "Add a simple landing page with a heading, a short description, and a primary Button that links to the invite flow. This page should use only existing approved components.",
+    "acceptance_criteria": [
+      "Heading reads 'Welcome'",
+      "Description explains the app purpose",
+      "Primary Button labeled 'Invite people' using the approved Button component"
+    ],
+    "linked_figma": null,
+    "related_work_items": [],
+    "findings": [],
+    "approved_decisions": [
+      "landing page is a simple page pattern built from existing Button and typography components"
+    ],
+    "updated_at": "2026-09-25T16:00:00+00:00"
+  }
+}

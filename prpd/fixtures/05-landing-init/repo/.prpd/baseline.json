@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "repo": "greenfield-app",
+  "initialized_at": "2026-09-18T16:16:50.246663+00:00",
+  "outcome": "ready_with_gaps",
+  "dimensions": {
+    "figma": "absent",
+    "coded_system": "absent",
+    "source_relationship": "not_applicable",
+    "maturity": "greenfield"
+  },
+  "stack": {
+    "framework": "react",
+    "styling": "css-modules",
+    "component_dir": "src/design-system",
+    "token_files": []
+  },
+  "sources": [],
+  "accessibility_target": "WCAG 2.2 AA",
+  "foundations": {
+    "typography": {
+      "status": "approved",
+      "source": "init-agent",
+      "notes": "system font stack, modular scale 1.25 from 16px base, roles: heading-1/heading-2/body/caption"
+    },
+    "color": {
+      "status": "approved",
+      "source": "init-agent",
+      "notes": "5 hues (primary/neutral/success/warning/danger), 9-step ramps 100-900, primary anchored at #2563EB per user; semantic aliases for text/background/surface/border/primary/focus/status text+surface; status text uses 700-step to hold WCAG 2.2 AA contrast on white"
+    },
+    "spacing": {
+      "status": "approved",
+      "source": "init-agent",
+      "notes": "4px base scale (0-64px, 9 steps) plus border-radius, border-width, and shadow/elevation tokens; shadow tokens are light-surface only for now"
+    }
+  },
+  "components": [
+    {
+      "name": "Text",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Text/Text.jsx",
+      "variants": [
+        "heading-1",
+        "heading-2",
+        "body",
+        "caption"
+      ],
+      "notes": "routes all heading/body/caption text through approved typography roles"
+    },
+    {
+      "name": "Button",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Button/Button.jsx",
+      "variants": [
+        "primary",
+        "secondary",
+        "danger",
+        "disabled",
+        "loading"
+      ],
+      "notes": "native <button>, focus-visible ring via --color-focus-ring, aria-busy when loading"
+    },
+    {
+      "name": "Badge",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Badge/Badge.jsx",
+      "variants": [
+        "neutral",
+        "success",
+        "warning",
+        "danger"
+      ],
+      "notes": "requires a text label; status must not be conveyed by color alone"
+    },
+    {
+      "name": "TextInput",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/TextInput/TextInput.jsx",
+      "variants": [
+        "default",
+        "help-text",
+        "disabled",
+        "error"
+      ],
+      "notes": "label associated via useId, help/error text wired via aria-describedby, error sets aria-invalid"
+    },
+    {
+      "name": "Select",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Select/Select.jsx",
+      "variants": [
+        "default",
+        "help-text",
+        "disabled",
+        "error"
+      ],
+      "notes": "native <select>, same label/help/error pattern as TextInput"
+    },
+    {
+      "name": "Checkbox",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Checkbox/Checkbox.jsx",
+      "variants": [
+        "default",
+        "checked",
+        "indeterminate",
+        "disabled"
+      ],
+      "notes": "indeterminate set imperatively via ref since it is a DOM property, not an HTML attribute"
+    },
+    {
+      "name": "Card",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Card/Card.jsx",
+      "variants": [
+        "default",
+        "with-footer"
+      ],
+      "notes": "surface container with optional title/footer slots"
+    },
+    {
+      "name": "Modal",
+      "status": "approved",
+      "source": "init-agent",
+      "path": "src/design-system/components/Modal/Modal.jsx",
+      "variants": [
+        "default"
+      ],
+      "notes": "native <dialog> + showModal() for focus trap/inerting/top-layer, aria-labelledby to title, close on Escape/backdrop-click"
+    },
+    {
+      "name": "Table",
+      "status": "approved",
+      "source": "ticket-agent:TICKET-101",
+      "path": "src/design-system/components/Table/Table.jsx",
+      "variants": [
+        "default",
+        "sortable",
+        "loading",
+        "empty",
+        "error"
+      ],
+      "notes": "native <table>, aria-sort on sortable headers, role=alert error banner with retry, stacked responsive layout below 640px; callers compose cell content (e.g. Badge for status) rather than Table owning domain meaning"
+    }
+  ],
+  "gaps": [
+    {
+      "area": "large_components_and_page_patterns",
+      "description": "No real product area exists yet in this greenfield scaffold (App.jsx is a placeholder), so composite-to-page-level patterns were not built. Foundations (typography, color, spacing) and small/interactive/composite components (Text, Button, Badge, TextInput, Select, Checkbox, Card, Modal) are approved and validated. Trigger this layer via /ticket-agent when the first real page/feature needs it."
+    }
+  ],
+  "legacy_patterns": [],
+  "exceptions": [],
+  "migrations": [],
+  "library_page": "library.html"
+}

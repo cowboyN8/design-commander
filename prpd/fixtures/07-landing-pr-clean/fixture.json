@@ -1,0 +1,28 @@
+{
+  "id": "07-landing-pr-clean",
+  "stage": "pr",
+  "description": "PR implementing TICKET-201 (landing page). Uses only existing approved components and introduces no blockers. Tests the clean-pass path: all three engines find no violations, the PR passes with zero overrides.",
+  "target_repo": "../05-landing-init/repo",
+  "ticket_id": "TICKET-201",
+  "pr": {
+    "id": "PR-77",
+    "title": "Implement landing page (closes TICKET-201)",
+    "changed_files": [
+      "src/App.jsx"
+    ]
+  },
+  "expected": {
+    "final_verdict": "pass",
+    "expected_findings": [],
+    "behaviors": [
+      "verifies PR diff uses only approved components",
+      "runs all three engines and finds no blockers",
+      "passes with no overrides or exceptions",
+      "ticket validate passes at end of run",
+      "verdict is pass because no blockers are open"
+    ]
+  },
+  "user_simulation": {
+    "notes": "No overrides or exceptions needed; the PR should pass cleanly."
+  }
+}

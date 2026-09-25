@@ -5,6 +5,11 @@
       "id": "greenfield-manage-users",
       "description": "01-greenfield (init) -> 02-ticket-new-page (ticket, Table extension) -> 03-pr-manage-users (pr, fail-fix-pass + override + adversarial challenge)",
       "fixtures": ["01-greenfield", "02-ticket-new-page", "03-pr-manage-users"]
+    },
+    {
+      "id": "greenfield-landing-page",
+      "description": "05-landing-init (init) -> 06-landing-ticket (ticket, no new components needed) -> 07-landing-pr-clean (pr, zero-blocker clean pass)",
+      "fixtures": ["05-landing-init", "06-landing-ticket", "07-landing-pr-clean"]
     }
   ],
   "standalone": [

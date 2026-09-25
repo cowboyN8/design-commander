@@ -1,0 +1,30 @@
+{
+  "id": "05-landing-init",
+  "stage": "init",
+  "description": "Greenfield React app scaffold. Same starting state as 01-greenfield; used as the init fixture for the landing-page clean-PR chain.",
+  "expected": {
+    "dimensions": {
+      "figma": "absent",
+      "coded_system": "absent",
+      "source_relationship": "not_applicable",
+      "maturity": "greenfield"
+    },
+    "outcome": ["ready", "ready_with_gaps"],
+    "behaviors": [
+      "asks stack questions before generating code",
+      "presents high-level roadmap before building layers",
+      "builds foundations before components",
+      "requires user approval per layer",
+      "generates a design-system library page",
+      "writes baseline via prpd.py (schema-valid)",
+      "check-files passes at end of run"
+    ]
+  },
+  "initial_ref": "cbe31008cad8446f2c0c8de681f620cff1966bda",
+  "user_simulation": {
+    "notes": "Expected answers a simulated user would give during init.",
+    "stack": { "framework": "react", "styling": "css-modules" },
+    "accessibility_target": "WCAG 2.2 AA",
+    "approvals": "approve all layer specs as presented"
+  }
+}

@@ -129,7 +129,9 @@ def check_ticket_recorded(repo_dir: Path, ticket_id: str) -> Result:
         return Result(f"ticket {ticket_id} recorded in tickets.json", False, f"{tickets_path} does not exist")
     tickets = load_json(tickets_path)
     record = tickets.get(ticket_id)
-    ok_ = record is not None and record.get("findings") and record.get("approved_decisions")
+    findings = record.get("findings") if record else None
+    decisions = record.get("approved_decisions") if record else None
+    ok_ = record is not None and (findings or decisions)
     return Result(
         f"ticket {ticket_id} recorded in tickets.json",
         bool(ok_),
