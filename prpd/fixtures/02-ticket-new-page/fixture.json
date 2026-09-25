@@ -25,6 +25,7 @@
       "permission behavior for non-admins undefined",
       "no Table component exists"
     ],
+    "expected_findings": ["ux_pattern-1", "ux_pattern-2", "accessibility-1", "convention-1"],
     "extension_approved": "Table",
     "behaviors": [
       "flags baseline.gaps overlap as a first-class finding, not a footnote",

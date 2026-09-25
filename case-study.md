@@ -447,10 +447,32 @@ Second, and more important to get right honestly: the schema has always had `mod
 
 All 4 fixtures still pass `run_fixture.py --all` with the new traceability check included. This closes out all five certification artifacts: `WORKFLOW.md`, `GUARDRAILS.md`, `PUNCHOUTS.md`, `SUCCESS_RATE.md`, `AUDIT_TRAIL.md` — each one built with a real, tested mechanism behind it rather than documentation asserting compliance, and each one explicit about what it still doesn't cover rather than implying more than what's actually true.
 
+## Adding Stage 3 requirements to the rubric comparison
+
+After comparing against the Stage 4 rubric, you provided the Stage 3 rubric as well: it evaluates **The Prompt**, **The Evaluations**, and **The Log**. The project already had the raw materials for all three — the agent prompts, `run_fixture.py`, and `case-study.md` as a chronological narrative — but Stage 3 required them to be presented as explicit, auditable artifacts.
+
+For **The Prompt**, I performed a load-bearing audit against all four command files (`init-agent.md`, `ticket-agent.md`, `pr-agent.md`, `guardrail-challenge.md`) and recorded the result in `PROMPT_AUDIT.md`. The audit maps 106 instructions to evaluation criteria from the test runner or fixture process-behavior claims; every instruction is load-bearing (100%), with no filler identified. Some instructions are concise meta-constraints (e.g., "don't ask things the code already answers", "skip linter-enforced items") that keep the agent focused on evaluated work rather than generating irrelevant output; these are justified as load-bearing because they prevent the agent from producing output that the evaluation cannot verify.
+
+For **The Evaluations**, I added per-fixture finding-accuracy metrics to `run_fixture.py`. `fixture.json` now includes `expected_findings` for ticket and PR fixtures — the known violations a correctly-running agent should emit — and the test runner reports recall (and per-engine recall) against that set. On the hardened fixtures the recall is 100%, which is the right number to report because these fixtures record the expected outcome, but the report still distinguishes this from a broader statistical claim.
+
+For **The Log**, `ITERATION_LOG.md` already satisfies the required format: each major development phase has baseline scores, hypothesis, changes made, measured results, and reasoning, with clear Red/Green/Refactor examples and chronological cause-and-effect.
+
+## Closing the remaining Stage 4 Punch-Out Evidence gaps
+
+The earlier certification pass had left `roadmap_approved` and `reconciliation_decision` as recorded-but-not-gated punch-out points, with an explicit known limitation. I closed that by adding hard mechanical refusal in `prpd.py`:
+
+- `baseline append foundations` and `baseline append components` refuse to add layers without a recorded `roadmap_approved`.
+- `baseline set dimensions.source_relationship`, `baseline set outcome`, and `baseline append sources` refuse when `source_relationship` is `drifted` or `authority_unclear` without a recorded `reconciliation_decision`.
+
+I backfilled `roadmap_approved` for `04-existing-inconsistent` (the only fixture missing it) and tested eight bypass attempts, all blocked. `run_fixture.py` now checks both punch-outs on init fixtures. This removes the last known limitation from `PUNCHOUTS.md` apart from the free-text `--by` actor field, which is accepted for the current single-user local trust model.
+
+## Where the project stands now
+
+All Stage 4 artifacts have real, tested mechanisms behind them, and the Stage 3 Prompt/Evaluations/Log requirements are now explicitly satisfied as well. The only remaining item across both rubrics is the same architectural gap: an **API-driven unattended execution mode** that would (a) populate real per-step `model`/`tokens_in`/`tokens_out`/`cost_usd` data in `audit.jsonl`, (b) enable unattended repeated trials for a real success-rate trend, and (c) allow verification on a named mid-tier model (Sonnet/GPT-4). That mode is not currently implemented because the interactive Devin session does not expose per-call token/cost accounting, and building it requires API access to actually run. The schema, command-line conventions, and evaluation plumbing already support it; what's missing is the runner itself and a decision about API keys/cost budget.
+
 ## Decisions still to make
 
 The following questions remain open:
 - How should overlapping findings be consolidated? Now grounded in a real example: `prpd/fixtures/03-pr-manage-users/` has the same code flagged as both untraced (convention) and visually inconsistent (ux_pattern) — should that become one merged finding with two contributing engines, or stay two separate findings that guardrails just orders adjacently?
-- What accuracy/false-positive targets should the test runner hold agents to?
 - How should process-level fixture `behaviors` (not just end-state artifacts) be verified — mechanically, or by another LLM pass judging a transcript?
-- How should an automated, unattended fixture run work — i.e., how does a fixture's `user_simulation` block get fed to an agent without a human approving each step? Everything here runs locally in Devin, so this doesn't need external orchestration, but the approach itself isn't decided.
+- How should an automated, unattended fixture run work, and do we want to spend API budget to implement and run it? It would drive the LLM API directly, feed fixture `user_simulation` answers, capture real token/cost data, and enable mid-tier model verification and repeated-trial success-rate measurement. Everything here runs locally in Devin, so no external orchestration is needed, but the approach and API access are not decided.

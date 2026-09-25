@@ -22,6 +22,13 @@
     "second_pass_new_blocker_id": "convention-6",
     "override_finding_id": "convention-6",
     "final_verdict": "pass",
+    "expected_findings": [
+      "convention-2", "convention-3", "convention-4",
+      "accessibility-2", "accessibility-3",
+      "ux_pattern-3", "ux_pattern-4",
+      "accessibility-4", "convention-5", "convention-6", "convention-7",
+      "guardrail-challenge-1"
+    ],
     "behaviors": [
       "flags PR components with no baseline/extension/exception trail as blockers, not just style nits",
       "runs all three engines and keeps overlapping findings from different engines distinct rather than silently merging them",

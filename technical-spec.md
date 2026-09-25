@@ -619,17 +619,19 @@ For `ticket` fixtures:
 - `ticket validate`, `baseline validate`, and `check-files` all pass
 - the ticket ID has recorded findings and approved decisions in `tickets.json`
 - any `expected.extension_approved` component is present in the baseline as `approved` with an existing file
+- if `expected.expected_findings` is present, every expected finding ID is recorded for that ticket (recall against the fixture's known violations). Per-engine recall is also reported.
 
 For `pr` fixtures:
 
 - `ticket validate`, `baseline validate`, and `check-files` all pass
 - the verdict computed from the linked ticket's findings (`fail` if any blocker has `status: open`, `pass` otherwise) matches `expected.final_verdict`
+- if `expected.expected_findings` is present, every expected finding ID is recorded for that ticket (recall against the fixture's known violations), including the adversarial-challenge finding
 
 It exits non-zero if any check fails, and separately lists which `expected.behaviors` entries it does **not** cover, since those describe process during a run (e.g. "asks stack questions before generating code") rather than the finished repo state, and cannot be verified from artifacts alone.
 
-This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user. Whether and how to add an automated, unattended run (an agent executing a command against a fixture using its `user_simulation` block, without a human approving each step) is still **Open** — everything in this system runs locally, so this would not require external orchestration, but the approach for scripting the simulated-user side is undecided.
+This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user. Whether and how to add an automated, unattended run (an agent executing a command against a fixture using its `user_simulation` block, without a human approving each step) is still **Open** — everything in this system runs locally, so this would not require external orchestration, but the approach for scripting the simulated-user side is undecided. Such a runner is also the only way to populate `model`/`tokens_in`/`tokens_out`/`cost_usd` accurately in `.prpd/audit.jsonl` (see §11).
 
-Remaining open items: accuracy/false-positive targets, mechanical or LLM-assisted verification of process-level `behaviors`, and the automated-run approach above.
+Remaining open items: mechanical or LLM-assisted verification of process-level `behaviors`, and the automated-run approach above.
 
 ## 11. Audit trail
 
@@ -645,6 +647,5 @@ Every workflow step must be traceable. The system must maintain `.prpd/audit.jso
 ## 12. Open technical decisions
 
 - Deduplication and disagreement policy
-- Accuracy/false-positive targets for the test runner
 - Mechanical or LLM-assisted verification of process-level fixture `behaviors`
-- Whether/how to script an automated, unattended agent run against a fixture's `user_simulation` block
+- Whether/how to script an automated, unattended agent run against a fixture's `user_simulation` block (this is also the path to accurate per-step model/token/cost data)

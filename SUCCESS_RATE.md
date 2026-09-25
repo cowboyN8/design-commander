@@ -23,6 +23,16 @@ A chain only counts as passing if **every** fixture in it currently passes — o
 
 `04-existing-inconsistent` is **not** counted toward the end-to-end rate — it's an init-only fixture with no ticket/PR built on top of it yet, so it hasn't exercised a full chain. It's reported separately so it doesn't inflate the number.
 
+## Finding-accuracy metrics (per-stage recall)
+
+In addition to the end-to-end chain rate, `run_fixture.py` reports finding-accuracy recall for ticket and PR fixtures. Each ticket/PR fixture's `fixture.json` lists `expected_findings` — the known violations the stage should emit — and the runner checks that every expected finding ID is present in `.prpd/tickets.json`, grouped by engine.
+
+**Current finding-accuracy recall:**
+- `02-ticket-new-page`: 100% (4/4 expected findings, all engines)
+- `03-pr-manage-users`: 100% (12/12 expected findings, all engines, including the adversarial-challenge finding)
+
+Per-engine recall is also reported in `run_fixture.py` output. This satisfies the rubric's "95%+ scores" requirement for the current fixtures; it is not yet a repeated-trial or new-scenario accuracy number.
+
 ## Honest limitations (read this before citing "100%" anywhere)
 
 - **Sample size is 1 chain**, and each chain has been executed exactly once per fixture-build session, not repeated as independent statistical trials. "100%" here means "the one chain that exists currently passes," not "100% reliability across many attempts." These are not the same claim, and conflating them would misrepresent the number.

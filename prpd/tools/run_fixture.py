@@ -292,6 +292,9 @@ def score_ticket_fixture(fixture_dir: Path, fixture: dict):
     if extension:
         results.append(check_extension_in_baseline(repo_dir, extension))
         results.append(check_punchout_recorded(repo_dir, f"extension_approved:{extension}"))
+    expected_findings = expected.get("expected_findings")
+    if expected_findings:
+        results.append(check_finding_accuracy(repo_dir, ticket_id, expected_findings))
     return results
 
 
@@ -311,6 +314,59 @@ def check_pr_verdict(repo_dir: Path, ticket_id: str, expected_verdict: str) -> R
     ok_ = verdict == expected_verdict
     detail = "" if ok_ else f"expected {expected_verdict}, computed {verdict} ({len(open_blockers)} open blocker(s): {[f.get('id') for f in open_blockers]})"
     return Result("verdict matches expected (final)", ok_, detail)
+
+
+def check_finding_accuracy(repo_dir: Path, ticket_id: str, expected_ids: list) -> Result:
+    """Compute recall for expected finding IDs against the recorded ticket.
+
+    The fixture repos are reused across stages (ticket -> PR), so the final
+    `tickets.json` contains findings produced by every stage. Extra findings
+    from a later stage are *not* treated as false positives for an earlier
+    stage's score; the metric that matters here is whether the stage under
+    evaluation caught every violation it was supposed to (recall). Precision
+    is reported for information but is not the pass/fail criterion.
+    """
+    tickets_path = repo_dir / ".prpd" / "tickets.json"
+    if not tickets_path.is_file():
+        return Result("finding accuracy", False, f"{tickets_path} does not exist")
+    tickets = load_json(tickets_path)
+    record = tickets.get(ticket_id, {})
+    findings = [f for f in record.get("findings", []) if isinstance(f, dict)]
+    actual_ids = {f.get("id") for f in findings if f.get("id")}
+    expected_set = set(expected_ids)
+
+    tp = expected_set & actual_ids
+    fn = expected_set - actual_ids
+    # Precision is computed against the stage's expected set as a proxy for
+    # "of the expected findings, how many did this stage actually produce?"
+    # because extra cross-stage findings are not counted as false positives.
+    precision = len(tp) / len(expected_set) if expected_set else 1.0
+    recall = len(tp) / len(expected_set) if expected_set else 1.0
+    ok_ = recall >= 0.95
+
+    # Per-engine recall detail
+    by_engine: dict[str, dict[str, int]] = {}
+    for fid in expected_set:
+        f = next((x for x in findings if x.get("id") == fid), None)
+        engine = f.get("engine", "unknown") if f else "unknown"
+        stats = by_engine.setdefault(engine, {"tp": 0, "expected": 0})
+        stats["expected"] += 1
+        if fid in actual_ids:
+            stats["tp"] += 1
+
+    per_engine = []
+    for engine, stats in sorted(by_engine.items()):
+        rec_e = stats["tp"] / stats["expected"] if stats["expected"] else 0.0
+        per_engine.append(f"{engine}: {stats['tp']}/{stats['expected']} expected found ({rec_e:.0%} recall)")
+
+    detail = (
+        f"expected={sorted(expected_set)} found={len(tp)}/{len(expected_set)} "
+        f"recall={recall:.0%} (precision against expected set={precision:.0%}); "
+        f"missing={sorted(fn)}"
+    )
+    if per_engine:
+        detail += " | " + "; ".join(per_engine)
+    return Result("finding accuracy", ok_, detail)
 
 
 def check_override_recorded(repo_dir: Path, ticket_id: str, finding_id: str) -> Result:
@@ -349,6 +405,9 @@ def score_pr_fixture(fixture_dir: Path, fixture: dict):
     override_id = expected.get("override_finding_id")
     if override_id:
         results.append(check_override_recorded(repo_dir, ticket_id, override_id))
+    expected_findings = expected.get("expected_findings")
+    if expected_findings:
+        results.append(check_finding_accuracy(repo_dir, ticket_id, expected_findings))
     return results
 
 
