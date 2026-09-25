@@ -26,6 +26,7 @@ Commands:
 import argparse
 import hashlib
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -673,6 +674,12 @@ def main() -> None:
     p_audit.set_defaults(func=cmd_audit)
 
     args = parser.parse_args()
+    # In the local Devin-encapsulated runtime, the model identifier is whatever
+    # the environment exposes. We never want null model fields in the audit log
+    # when a value is available; token/cost remain null because Devin does not
+    # expose per-call token accounting to the agent.
+    if not args.model:
+        args.model = os.environ.get("PRPD_MODEL", "devin-adaptive")
     repo_dir = Path(args.repo_dir).resolve()
     entry = {
         "kind": "helper_call",

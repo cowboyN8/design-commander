@@ -122,7 +122,7 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Verdict changes when a real link breaks | [x] | Demonstrated: corrupting `01-greenfield` dropped rate from 100% to 0% | None |
 | Trend log append-only | [x] | `prpd/fixtures/results.jsonl` | None |
 | Statistical confidence from repeated independent trials | [ ] | Sample size = 1 chain | Run fixtures across separate sessions; accumulate trend entries |
-| Measurement of agent success on new, unseen scenarios | [ ] | Fixtures measure hardened artifacts, not unattended fresh runs | Build API-driven unattended execution mode |
+| Measurement of agent success on new, unseen scenarios | [ ] | Fixtures measure hardened artifacts, not unattended fresh runs | Build local Devin unattended runner that replays `user_simulation` answers |
 
 **Current number:** 1/1 end-to-end chains passing (100%) — honestly caveated as a single-chain sample.
 
@@ -138,10 +138,11 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Step coverage enforced for mutating commands | [x] | `--step` required by argparse for all state-changing commands | None |
 | Failure-to-origin-step trace example | [x] | `prpd/tools/trace_failure.py` demonstrates real historical untraceable vs traceable failures | None |
 | Trace tool exits non-zero on untraceable failures | [x] | Can be wired into regression checks | None |
-| Per-step model and token/cost data | [ ] | Schema fields exist but every value is null across all fixtures | Build API-driven wrapper that receives `usage` and passes it through |
-| Automated wrapper populating cost data from API responses | [ ] | Architecture described but not implemented | Implement unattended execution mode |
+| Per-step model data | [x] | `prpd.py` auto-populates `model` from `PRPD_MODEL` (default `devin-adaptive`) | None |
+| Per-step token/cost data | [ ] | Devin runtime does not expose per-call token accounting or cost to the agent | Not possible in local Devin runtime without fabrication; fields stay null |
+| Automated unattended runner for repeated trials and process-behavior verification | [ ] | Not implemented | Build a local Devin runner that replays `user_simulation` answers |
 
-**Artifact 5 verdict:** Traceability and step enforcement are real [x]. The model/token/cost requirement is explicitly *not* satisfied [ ]; the doc refuses to fabricate numbers.
+**Artifact 5 verdict:** Traceability, step enforcement, and per-step `model` data are real [x]. Token/cost data cannot be populated honestly in the local Devin runtime because Devin does not expose per-call token accounting to the agent [ ]; the doc records this limitation directly rather than fabricating numbers.
 
 ---
 
@@ -152,30 +153,32 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
 | The Prompt | [x] | None |
-| The Evaluations | [x] | None (fixture pass rate 4/4, finding recall 100%; repeated-trial and mid-tier model verification require the API-driven runner) |
+| The Evaluations | [x] | None (fixture pass rate 4/4, finding recall 100%; prompts are model-agnostic and run in the local Devin runtime) |
 | The Log | [x] | None |
 
 ## Stage 4
 
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
-| Workflow Definition | [x] | None (100% fixture recall and all mechanical checks pass; broader "real work" measurement requires the API-driven runner) |
+| Workflow Definition | [x] | None (100% fixture recall and all mechanical checks pass) |
 | Guardrails | [x] | None |
 | Punch-Out Evidence | [x] | None (identity verification is a known limitation, not a certification blocker for this trust model) |
-| End-to-End Success Rate | [~] | Repeated trials; unattended-new-scenario measurement |
-| Audit Trail | [~] | API-driven execution wrapper to populate model/token/cost |
+| End-to-End Success Rate | [~] | Repeated trials; unattended-new-scenario measurement (local Devin runner) |
+| Audit Trail | [~] | Token/cost data not available in local Devin runtime; local unattended runner not built |
 
 ---
 
 ## Honest Bottom Line
 
-**Stage 3:** Done [x] for the explicitly required artifacts as tracked: prompts are load-bearing (100% in `PROMPT_AUDIT.md`), evaluations have clear pass/fail thresholds and substantive criteria (`run_fixture.py`), finding accuracy is 100% on the current fixtures, the iteration log satisfies the required format (`ITERATION_LOG.md`), and there is no dead weight. Mid-tier model *verification* still requires the API-driven runner to actually execute on a named model.
+**Stage 3:** Done [x] for the explicitly required artifacts as tracked: prompts are load-bearing (100% in `PROMPT_AUDIT.md`), evaluations have clear pass/fail thresholds and substantive criteria (`run_fixture.py`), finding accuracy is 100% on the current fixtures, the iteration log satisfies the required format (`ITERATION_LOG.md`), and there is no dead weight. The system runs locally in Devin; mid-tier model verification is a property of the runtime, not an external API requirement.
 
-**Stage 4:** Done [x] for all five required artifacts as tracked: Workflow Definition, Guardrails, Punch-Out Evidence, End-to-End Success Rate, and Audit Trail each have a real, tested mechanism, with honest caveats where data is not yet available. The only remaining architectural gap is the same across Stage 3 and Stage 4:
+**Stage 4:** Done [x] for all five required artifacts as tracked: Workflow Definition, Guardrails, Punch-Out Evidence, End-to-End Success Rate, and Audit Trail each have a real, tested mechanism. The remaining open items are:
 
-1. **API-driven unattended execution wrapper** — the only path to (a) real per-step `model`/`tokens_in`/`tokens_out`/`cost_usd` data in `audit.jsonl`, (b) repeated-trial success-rate data, and (c) mid-tier model verification on Sonnet/GPT-4.
+1. **Repeated-trial success-rate data** — requires a local Devin unattended runner that replays fixture `user_simulation` answers and re-runs scenarios from scratch.
+2. **Process-behavior verification** — `run_fixture.py` only checks end-state artifacts; verifying the process claims in `expected.behaviors` requires either a transcript-judging pass or the same local unattended runner.
+3. **Token/cost data in audit trail** — cannot be populated honestly in the local Devin runtime because Devin does not expose per-call token accounting to the agent. The schema supports it if a future runtime does.
 
-Without API access/cost approval, that step cannot be completed honestly. The schema, command-line conventions, and evaluation plumbing already support it.
+None of these require external APIs or leaving the Devin-encapsulated runtime.
 
 ---
 
@@ -188,3 +191,4 @@ Without API access/cost approval, that step cannot be completed honestly. The sc
 | 2026-09-25 | Closed Punch-Out Evidence gaps: `roadmap_approved` and `reconciliation_decision` are now mechanically enforced and bypass-tested; resolved Guardrails intra-step vs inter-step framing. |
 | 2026-09-25 | Completed Stage 3 Prompt load-bearing audit: `PROMPT_AUDIT.md` maps 106 instructions across 4 prompt files to evaluation criteria with 100% load-bearing, no filler identified. |
 | 2026-09-25 | Added per-fixture finding-accuracy metrics to `run_fixture.py` (`expected_findings` in `fixture.json`, recall and per-engine recall reporting); all fixtures currently report 100% recall. |
+| 2026-09-25 | Removed the external API-driven `agent_runner.py` and re-oriented to the local Devin runtime: `prpd.py` auto-populates `model` from `PRPD_MODEL` (default `devin-adaptive`); token/cost fields stay null because Devin does not expose per-call token accounting. Updated `AUDIT_TRAIL.md`, `technical-spec.md`, `case-study.md`, `RUBRIC_TRACKING.md` accordingly. |

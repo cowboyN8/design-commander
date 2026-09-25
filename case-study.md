@@ -335,7 +335,7 @@ For PR reporting I confirmed the comment-based approach: one maintained summary 
 
 I then wrote `prpd/commands/pr-agent.md`, the third command. It verifies the PR links to a reviewed ticket, checks that every new component or pattern traces to an approval, runs all three engines with their distinct perspectives, applies the confidence and blocker/advisory policy, consolidates findings through guardrails, and reports through the ADO comment model with rerun support.
 
-Mapping the Stage 4 certification criteria onto the project surfaced a gap: no audit trail. I added `.prpd/audit.jsonl`, an append-only event log maintained by `prpd.py`. Every helper call logs automatically, and agents emit structured events — questions, approvals, overrides, engine runs — tagged with workflow step and model/token/cost data. This gives the exam's required failure-to-origin tracing and per-step cost data, and doubles as punch-out evidence since every human approval point is recorded.
+Mapping the Stage 4 certification criteria onto the project surfaced a gap: no audit trail. I added `.prpd/audit.jsonl`, an append-only event log maintained by `prpd.py`. Every helper call logs automatically, and agents emit structured events — questions, approvals, overrides, engine runs — tagged with workflow step and model data. The schema also includes `tokens_in`, `tokens_out`, and `cost_usd`; in the local Devin runtime those fields stay null because Devin does not expose per-call token accounting to the agent.
 
 ## Running `/init-agent` for the first time
 
@@ -468,11 +468,15 @@ I backfilled `roadmap_approved` for `04-existing-inconsistent` (the only fixture
 
 ## Where the project stands now
 
-All Stage 4 artifacts have real, tested mechanisms behind them, and the Stage 3 Prompt/Evaluations/Log requirements are now explicitly satisfied as well. The only remaining item across both rubrics is the same architectural gap: an **API-driven unattended execution mode** that would (a) populate real per-step `model`/`tokens_in`/`tokens_out`/`cost_usd` data in `audit.jsonl`, (b) enable unattended repeated trials for a real success-rate trend, and (c) allow verification on a named mid-tier model (Sonnet/GPT-4). That mode is not currently implemented because the interactive Devin session does not expose per-call token/cost accounting, and building it requires API access to actually run. The schema, command-line conventions, and evaluation plumbing already support it; what's missing is the runner itself and a decision about API keys/cost budget.
+All Stage 4 artifacts have real, tested mechanisms behind them, and the Stage 3 Prompt/Evaluations/Log requirements are now explicitly satisfied as well. (I briefly went down a wrong path and wrote an external API-driven `agent_runner.py`; I removed it once I remembered your repeated instruction that this project stays fully encapsulated in Devin and local, with no external API dependencies.)
+
+The only remaining item across both rubrics is an **automated, unattended fixture runner** inside the local Devin runtime that could feed `user_simulation` answers to an agent and re-run a scenario from scratch without a human approving each step. That would enable (a) repeated-trial success-rate data and (b) mechanical verification of the process-level `behaviors` that `run_fixture.py` currently cannot check. It would not require external APIs — it runs inside Devin — but the approach for simulating user answers and replaying agent decisions is not yet implemented.
+
+For `tokens_in`/`tokens_out`/`cost_usd`: those fields stay null because Devin does not expose per-call token accounting or cost to the agent. `model` is now auto-populated (`devin-adaptive` by default, or from `PRPD_MODEL`) so the audit trail records the runtime, which is the honest local-runtime state.
 
 ## Decisions still to make
 
 The following questions remain open:
 - How should overlapping findings be consolidated? Now grounded in a real example: `prpd/fixtures/03-pr-manage-users/` has the same code flagged as both untraced (convention) and visually inconsistent (ux_pattern) — should that become one merged finding with two contributing engines, or stay two separate findings that guardrails just orders adjacently?
 - How should process-level fixture `behaviors` (not just end-state artifacts) be verified — mechanically, or by another LLM pass judging a transcript?
-- How should an automated, unattended fixture run work, and do we want to spend API budget to implement and run it? It would drive the LLM API directly, feed fixture `user_simulation` answers, capture real token/cost data, and enable mid-tier model verification and repeated-trial success-rate measurement. Everything here runs locally in Devin, so no external orchestration is needed, but the approach and API access are not decided.
+- How should an automated, unattended fixture run work inside Devin? It would replay a fixture's `user_simulation` answers, run the agent without a human approving each step, and enable repeated-trial success-rate measurement and verification of process-level `behaviors`. Everything here runs locally in Devin, so no external orchestration or API keys are needed, but the approach is not decided.

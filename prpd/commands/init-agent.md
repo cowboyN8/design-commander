@@ -13,11 +13,14 @@ Never hand-write `.prpd/baseline.json` or `.prpd/tickets.json`. Use the helper
 so writes stay schema-valid.
 
 Tag every helper call with `--step init.<phase>` (e.g., `init.classify`,
-`init.layer.color`, `init.verify`) and pass `--model`/`--tokens-in`/
-`--tokens-out`/`--cost` when known. Emit `prpd.py audit <event>` for judgment
-moments: `question_asked`, `layer_approved`, `layer_rejected`,
-`conflict_resolved`, `outcome_recorded`. Every decision and failure must be
-traceable to its step in `.prpd/audit.jsonl`.
+`init.layer.color`, `init.verify`). `prpd.py` auto-populates `--model` from the
+`PRPD_MODEL` environment variable (default `devin-adaptive`) so the audit trail
+always records the local runtime. Pass `--tokens-in`/`--tokens-out`/`--cost`
+only if the runtime exposes them — Devin does not expose per-call token
+accounting, so those fields are expected to stay null in this encapsulated
+runtime. Emit `prpd.py audit <event>` for judgment moments: `question_asked`,
+`layer_approved`, `layer_rejected`, `conflict_resolved`, `outcome_recorded`.
+Every decision and failure must be traceable to its step in `.prpd/audit.jsonl`.
 
 ## Step 0 — Prepare
 

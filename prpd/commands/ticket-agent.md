@@ -11,8 +11,9 @@ links designs) uses the **Figma MCP server**. All mechanical writes go through:
     python3 <toolkit>/prpd/tools/prpd.py <command> --repo-dir <repo>
 
 Tag helper calls `--step ticket.<phase>` and emit `prpd.py audit` events for
-questions, extension approvals, and exceptions granted — with model/token data
-when known.
+questions, extension approvals, and exceptions granted. `prpd.py` auto-populates
+`--model` from `PRPD_MODEL` (default `devin-adaptive`); only pass
+`--tokens-in`/`--tokens-out`/`--cost` if the runtime exposes them.
 
 ## Step 1 — Load context
 

@@ -6,6 +6,8 @@
 
 Every mutating, decision-producing command (`baseline new/set/append`, `ticket upsert/resolve`, `guardrail init-to-ticket/ticket-to-pr`, `punchout record`, `audit`) now requires `--step` — argparse refuses to run without it. Read-only inspection commands (`validate`, `check-files`, `ticket get`, `guardrail status`, `punchout log`) don't produce new state, so `--step` stays optional there.
 
+`model` is auto-populated by `prpd.py` from the `PRPD_MODEL` environment variable (default `devin-adaptive`) so the audit trail always records the local runtime, even when the caller doesn't pass `--model`.
+
 This wasn't a hypothetical gap being closed defensively — it fixes a real one. `01-greenfield`'s actual audit log contains a genuine historical failure recorded with `"step": null` (a `ticket get` call from before this convention was enforced). That single entry is real evidence of exactly what "coverage of all workflow steps, not just some" fails to mean: a failure that exists in the log but cannot be traced anywhere.
 
 ## Trace a specific failure to its exact origin step
@@ -30,28 +32,11 @@ future failures don't repeat this.
 
 The tool exits non-zero if any failure is untraceable, so it can be wired into the same regression checking as `run_fixture.py`. The old entry is left in the log rather than edited — audit history is append-only, and the point is that the *mechanism preventing recurrence* (the `--step` requirement above) is real, not that the historical record gets quietly cleaned up to look better.
 
-## Per-step model and token/cost data — honest status, not fabricated numbers
+## Per-step model and token/cost data — honest local-runtime status
 
-The schema has always had `model`, `tokens_in`, `tokens_out`, `cost_usd` fields. Checking the real data across all 4 fixtures: **every one of these fields is null in every entry recorded so far.** The plumbing exists; the data was never populated, because doing so honestly requires something this project doesn't currently have.
+The audit schema has `model`, `tokens_in`, `tokens_out`, `cost_usd` fields.
 
-Here's the actual constraint, stated plainly rather than worked around with plausible-looking fake numbers: **an interactively-run agent (this session) has no runtime access to its own per-call token counts or cost.** I am not exposed to that accounting information about my own inference — inventing specific-looking numbers here would be fabrication, not measurement, and would fail worse than leaving the field honestly null.
+- `model` is now populated automatically by `prpd.py` via `PRPD_MODEL` (default `devin-adaptive`). New audit entries therefore always record which local runtime produced the call.
+- `tokens_in`/`tokens_out`/`cost_usd` remain **null** in this Devin-encapsulated runtime because Devin does not expose per-call token accounting or cost to the agent. This is the honest local-runtime state, not an oversight. Fabricating plausible-looking numbers would be worse than leaving them null.
 
-What *can* be done honestly:
-- `--model` can be populated with the identifier the system actually discloses (in this environment: "Devin, powered by Adaptive" — a routing layer, not a specific foundation model name). This is now the convention going forward for interactive sessions.
-- `tokens_in`/`tokens_out`/`cost_usd` are correctly populated **only when `prpd.py` is invoked by something that actually has that data** — e.g. a wrapper script driving the LLM API directly, which receives `usage.prompt_tokens`/`usage.completion_tokens` and a computed cost in the API response, and passes them straight through:
-
-```python
-response = client.chat.completions.create(...)
-subprocess.run([
-    "python3", "prpd.py", "ticket", "upsert", ticket_id,
-    "--finding-json", finding_json,
-    "--step", "ticket.readiness",
-    "--model", response.model,
-    "--tokens-in", str(response.usage.prompt_tokens),
-    "--tokens-out", str(response.usage.completion_tokens),
-    "--cost", str(estimate_cost(response)),
-    "--repo-dir", repo_dir,
-])
-```
-
-This is exactly the automated/unattended execution mode discussed as an open item elsewhere (`technical-spec.md §10.2`, `SUCCESS_RATE.md`) — token/cost data becomes available as a natural side effect of *that* architecture, not as a separate thing to bolt on. Populating it accurately in an interactive session is not currently possible, and the doc says so instead of quietly leaving four always-null fields looking like an oversight.
+If the project is ever run under a different runtime that exposes usage data, those fields can be passed through with `--tokens-in`, `--tokens-out`, and `--cost`. In the local Devin runtime, they are intentionally not populated.

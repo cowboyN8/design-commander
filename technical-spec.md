@@ -629,7 +629,7 @@ For `pr` fixtures:
 
 It exits non-zero if any check fails, and separately lists which `expected.behaviors` entries it does **not** cover, since those describe process during a run (e.g. "asks stack questions before generating code") rather than the finished repo state, and cannot be verified from artifacts alone.
 
-This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user. Whether and how to add an automated, unattended run (an agent executing a command against a fixture using its `user_simulation` block, without a human approving each step) is still **Open** — everything in this system runs locally, so this would not require external orchestration, but the approach for scripting the simulated-user side is undecided. Such a runner is also the only way to populate `model`/`tokens_in`/`tokens_out`/`cost_usd` accurately in `.prpd/audit.jsonl` (see §11).
+This mechanical checker only scores an already-completed fixture; it does not invoke an agent or simulate a user. Whether and how to add an automated, unattended run (an agent executing a command against a fixture using its `user_simulation` block, without a human approving each step) is still **Open** — everything in this system runs locally in Devin, so this would not require external orchestration, but the approach for scripting the simulated-user side is undecided.
 
 Remaining open items: mechanical or LLM-assisted verification of process-level `behaviors`, and the automated-run approach above.
 
@@ -642,7 +642,7 @@ Every workflow step must be traceable. The system must maintain `.prpd/audit.jso
 - Agent-emitted entries should include `step` (for example `init.layer.color`, `pr.engine.accessibility`), `model`, `tokens_in`, `tokens_out`, and `cost_usd` when known, so per-step model and cost data is available.
 - Any failure must be traceable to its origin step. Guardrail rejections and validation failures must appear in the log with the producing step.
 - `--step` is a required argument (not merely recommended) for every mutating command: `baseline new/set/append`, `ticket upsert/resolve`, `guardrail init-to-ticket/ticket-to-pr`, `punchout record`, and `audit`. It remains optional for read-only commands (`validate`, `check-files`, `ticket get`, `guardrail status`, `punchout log`), which produce no new state to trace. `prpd/tools/trace_failure.py <repo-dir>` reports which recorded failures trace to an origin step and exits non-zero if any do not.
-- `model`/`tokens_in`/`tokens_out`/`cost_usd` can only be populated accurately by a caller that actually has that data (e.g. a wrapper script driving the LLM API directly and passing through the response's `usage` fields) — an interactive agent session has no runtime access to its own token/cost accounting and must not fabricate these values. See `AUDIT_TRAIL.md` for the current honest status and the architecture that would populate them for real.
+- `model` is auto-populated by `prpd.py` from `PRPD_MODEL` (default `devin-adaptive`), so every audit entry records the local runtime even when the caller doesn't pass `--model`. `tokens_in`/`tokens_out`/`cost_usd` remain null in the local Devin runtime because Devin does not expose per-call token accounting or cost to the agent; they should only be populated if a future runtime exposes that data and passes it through via `--tokens-in`, `--tokens-out`, `--cost`. See `AUDIT_TRAIL.md`.
 
 ## 12. Open technical decisions
 
