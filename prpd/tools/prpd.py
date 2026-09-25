@@ -508,6 +508,21 @@ def main() -> None:
     common.add_argument("--tokens-out", type=int, help="output tokens for audit entries")
     common.add_argument("--cost", type=float, help="step cost in USD for audit entries")
 
+    # Mutating / decision-producing commands must be traceable to an exact
+    # origin step -- an untraced historical failure (see AUDIT_TRAIL.md) is
+    # exactly the gap this enforces against recurring. Read-only commands
+    # (validate, get, status, log, check-files) don't produce new state, so
+    # --step stays optional for those. Built independently (not via
+    # parents=[common]) because argparse parents share the same Action
+    # objects, not copies -- mutating one would silently corrupt the other.
+    common_traced = argparse.ArgumentParser(add_help=False)
+    common_traced.add_argument("--repo-dir", default=argparse.SUPPRESS, help="target repository root")
+    common_traced.add_argument("--step", required=True, help="workflow step emitting this call (required -- see AUDIT_TRAIL.md)")
+    common_traced.add_argument("--model", help="model identifier for audit entries")
+    common_traced.add_argument("--tokens-in", type=int, help="input tokens for audit entries")
+    common_traced.add_argument("--tokens-out", type=int, help="output tokens for audit entries")
+    common_traced.add_argument("--cost", type=float, help="step cost in USD for audit entries")
+
     sub = parser.add_subparsers(dest="group", required=True)
 
     p_base = sub.add_parser("baseline", help="baseline.json operations")
@@ -522,20 +537,20 @@ def main() -> None:
     p_punch = sub.add_parser("punchout", help="explicit human decision points (see PUNCHOUTS.md)")
     punch_sub = p_punch.add_subparsers(dest="command", required=True)
 
-    p_new = base_sub.add_parser("new", parents=[common], help="create skeleton baseline.json")
+    p_new = base_sub.add_parser("new", parents=[common_traced], help="create skeleton baseline.json")
     p_new.add_argument("repo_name")
     p_new.set_defaults(func=cmd_baseline_new)
 
     p_val = base_sub.add_parser("validate", parents=[common], help="validate baseline.json against schema")
     p_val.set_defaults(func=cmd_baseline_validate)
 
-    p_set = base_sub.add_parser("set", parents=[common], help="set a field (dot path) in baseline.json")
+    p_set = base_sub.add_parser("set", parents=[common_traced], help="set a field (dot path) in baseline.json")
     p_set.add_argument("field")
     p_set.add_argument("value")
     p_set.set_defaults(func=cmd_baseline_set)
 
     p_append = base_sub.add_parser(
-        "append", parents=[common],
+        "append", parents=[common_traced],
         help="append a JSON object to an array field (dot path) in baseline.json, e.g. components, sources, gaps",
     )
     p_append.add_argument("field")
@@ -552,7 +567,7 @@ def main() -> None:
     p_tget.add_argument("ticket_id")
     p_tget.set_defaults(func=cmd_ticket_get)
 
-    p_tup = tick_sub.add_parser("upsert", parents=[common], help="merge findings/decisions for a ticket")
+    p_tup = tick_sub.add_parser("upsert", parents=[common_traced], help="merge findings/decisions for a ticket")
     p_tup.add_argument("ticket_id")
     p_tup.add_argument("--finding", action="append", help="plain-text finding")
     p_tup.add_argument("--finding-json", action="append", help="finding object as JSON")
@@ -560,7 +575,7 @@ def main() -> None:
     p_tup.set_defaults(func=cmd_ticket_upsert)
 
     p_tres = tick_sub.add_parser(
-        "resolve", parents=[common],
+        "resolve", parents=[common_traced],
         help="mark an existing finding fixed or overridden (rerun workflow; never deletes history)",
     )
     p_tres.add_argument("ticket_id")
@@ -571,13 +586,13 @@ def main() -> None:
     p_tres.set_defaults(func=cmd_ticket_resolve)
 
     p_gi2t = guard_sub.add_parser(
-        "init-to-ticket", parents=[common],
+        "init-to-ticket", parents=[common_traced],
         help="deterministic gate: refuses unless baseline is ready/ready_with_gaps and complete; writes .prpd/gates/init.ok",
     )
     p_gi2t.set_defaults(func=cmd_guardrail_init_to_ticket)
 
     p_gt2p = guard_sub.add_parser(
-        "ticket-to-pr", parents=[common],
+        "ticket-to-pr", parents=[common_traced],
         help="deterministic gate: refuses unless init.ok exists and the ticket has recorded findings/decisions; writes .prpd/gates/ticket-<id>.ok",
     )
     p_gt2p.add_argument("ticket_id")
@@ -586,7 +601,7 @@ def main() -> None:
     p_gstat = guard_sub.add_parser("status", parents=[common], help="print all gates that have passed")
     p_gstat.set_defaults(func=cmd_guardrail_status)
 
-    p_prec = punch_sub.add_parser("record", parents=[common], help="record a human decision at an explicit punch-out point")
+    p_prec = punch_sub.add_parser("record", parents=[common_traced], help="record a human decision at an explicit punch-out point")
     p_prec.add_argument("point_id")
     p_prec.add_argument("--decision", required=True)
     p_prec.add_argument("--by", required=True)
@@ -595,7 +610,7 @@ def main() -> None:
     p_plog = punch_sub.add_parser("log", parents=[common], help="print every recorded punch-out decision")
     p_plog.set_defaults(func=cmd_punchout_log)
 
-    p_audit = sub.add_parser("audit", parents=[common], help="emit an audit event to audit.jsonl")
+    p_audit = sub.add_parser("audit", parents=[common_traced], help="emit an audit event to audit.jsonl")
     p_audit.add_argument("event", help="event name, e.g. layer_approved, question_asked")
     p_audit.add_argument("--note", help="free-text detail")
     p_audit.set_defaults(func=cmd_audit)

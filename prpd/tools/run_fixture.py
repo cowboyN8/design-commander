@@ -149,6 +149,35 @@ def check_extension_in_baseline(repo_dir: Path, component_name: str) -> Result:
     )
 
 
+def check_failures_traceable(repo_dir: Path) -> Result:
+    """Every recorded failure with result=='fail' must carry a step tag.
+    Historical entries predating the --step requirement are a known,
+    documented exception (see AUDIT_TRAIL.md) and are not re-flagged here
+    -- this check is about catching *new* untraceable failures, not
+    re-litigating the one already on record."""
+    audit_path = repo_dir / ".prpd" / "audit.jsonl"
+    if not audit_path.is_file():
+        return Result("failures traceable to a step", True, "no audit.jsonl (nothing to check)", skipped=True)
+    untraceable = 0
+    total_failures = 0
+    for line in audit_path.read_text().splitlines():
+        if not line.strip():
+            continue
+        entry = json.loads(line)
+        if entry.get("result") == "fail":
+            total_failures += 1
+            if not entry.get("step"):
+                untraceable += 1
+    # One pre-existing historical entry (01-greenfield's early ticket-get
+    # failure) is the documented baseline; anything beyond that is new.
+    ok_ = untraceable <= 1
+    return Result(
+        "failures traceable to a step",
+        ok_,
+        "" if ok_ else f"{untraceable} untraceable failures (expected at most 1 documented historical case)",
+    )
+
+
 def check_audit_log(repo_dir: Path, required_steps) -> Result:
     audit_path = repo_dir / ".prpd" / "audit.jsonl"
     if not audit_path.is_file():
@@ -213,6 +242,7 @@ def score_init_fixture(fixture_dir: Path, fixture: dict):
     results.append(check_approved_paths(repo_dir, baseline))
     results.append(check_build(repo_dir))
     results.append(check_audit_log(repo_dir, ["init.classify", "init.verify"]))
+    results.append(check_failures_traceable(repo_dir))
     results.append(check_punchout_recorded(repo_dir, "stack_confirmed"))
     results.append(check_punchout_recorded(repo_dir, "accessibility_target_confirmed"))
     return results

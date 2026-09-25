@@ -639,6 +639,8 @@ Every workflow step must be traceable. The system must maintain `.prpd/audit.jso
 - Agents must emit `agent_event` entries via `prpd.py audit <event>` for judgment moments: questions asked, approvals granted or denied, overrides, layer completions, and engine runs.
 - Agent-emitted entries should include `step` (for example `init.layer.color`, `pr.engine.accessibility`), `model`, `tokens_in`, `tokens_out`, and `cost_usd` when known, so per-step model and cost data is available.
 - Any failure must be traceable to its origin step. Guardrail rejections and validation failures must appear in the log with the producing step.
+- `--step` is a required argument (not merely recommended) for every mutating command: `baseline new/set/append`, `ticket upsert/resolve`, `guardrail init-to-ticket/ticket-to-pr`, `punchout record`, and `audit`. It remains optional for read-only commands (`validate`, `check-files`, `ticket get`, `guardrail status`, `punchout log`), which produce no new state to trace. `prpd/tools/trace_failure.py <repo-dir>` reports which recorded failures trace to an origin step and exits non-zero if any do not.
+- `model`/`tokens_in`/`tokens_out`/`cost_usd` can only be populated accurately by a caller that actually has that data (e.g. a wrapper script driving the LLM API directly and passing through the response's `usage` fields) — an interactive agent session has no runtime access to its own token/cost accounting and must not fabricate these values. See `AUDIT_TRAIL.md` for the current honest status and the architecture that would populate them for real.
 
 ## 12. Open technical decisions
 
