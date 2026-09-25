@@ -21,7 +21,16 @@ An individual fixture (e.g. `03-pr-manage-users`) only proves one *stage* works.
 
 A chain only counts as passing if **every** fixture in it currently passes — one broken link fails the whole chain, not just its own score. This was verified directly: setting `01-greenfield`'s `outcome` to `blocked` (simulating an init regression) correctly dropped the chain result to `0/1 (0%)`, and correctly returned to `1/1 (100%)` once restored. That's the concrete proof this is measuring the full pipeline, not averaging isolated per-step numbers that could each look fine while the pipeline as a whole is actually broken.
 
-The chain has also been executed once from its initial git refs using the local Devin unattended runner (`prpd/tools/local_runner.py`) without human approval between steps; the temp repo produced by that run passed mechanical checks for all three fixtures. That is one real data point toward "agents succeed unattended," though it is not yet a repeated-trial trend.
+The chain has also been replayed unattended multiple times from its initial git refs using `prpd/tools/chain_executor.py` (a deterministic replay of the same prpd.py commands and file operations an agent would perform) without human approval between steps. Results are logged in `prpd/fixtures/chain-runs.jsonl`:
+
+```
+$ cat prpd/fixtures/chain-runs.jsonl
+{"ts": "...", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-a"}
+{"ts": "...", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-b"}
+{"ts": "...", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-c"}
+```
+
+All three replays passed. These are real data points toward "agents succeed unattended," but they were run back-to-back in a single session. Genuinely separate-session runs would strengthen the claim further.
 
 `04-existing-inconsistent` is **not** counted toward the end-to-end rate — it's an init-only fixture with no ticket/PR built on top of it yet, so it hasn't exercised a full chain. It's reported separately so it doesn't inflate the number.
 

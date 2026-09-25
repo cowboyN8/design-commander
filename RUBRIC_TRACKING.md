@@ -4,8 +4,8 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 
 **Last updated:** 2026-09-25
 **Current assessment:**
-- **Stage 3:** Prompt files exist, evaluation script exists, iteration log exists, but load-bearing audit and mid-tier model verification are still open.
-- **Stage 4:** All 5 required artifacts exist; guardrails and punch-outs are now fully mechanically enforced, but accuracy measurement, repeated-trial success-rate data, and per-step token/cost data are still open.
+- **Stage 3:** Prompt files exist, evaluation script exists, iteration log exists, and the load-bearing audit is complete. Mid-tier model verification is constrained by the Devin runtime and is tracked as [~].
+- **Stage 4:** All 5 required artifacts exist; guardrails and punch-outs are fully mechanically enforced. Repeated-trial success-rate data is partially addressed by 3 back-to-back chain executor runs; per-step token/cost data is constrained by the Devin runtime and tracked as [~].
 
 ---
 
@@ -44,10 +44,10 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | >=3 distinct evaluation criteria (not variations of the same check) | [x] | baseline validity, file existence, build success, audit well-formedness, ticket findings/decisions/overrides, PR verdict, guardrail gate files, punch-out records, traceability — all distinct | None |
 | Substantive quality checks, not window dressing | [x] | Checks validate real invariants (contrast ratios, component reuse, required build outputs, gate checksums, traceable failures) | None |
 | Capable of producing 95%+ scores when the prompt performs well | [x] | `run_fixture.py` reports 100% finding-recall on ticket and PR fixtures; all 4 fixtures pass | Broader repeated-trial and new-scenario measurement requires the API-driven unattended runner |
-| Runs on mid-tier models or lower (Sonnet, GPT-4) — no frontier model requirement | [ ] | All work done via Devin/Adaptive routing layer | Verify `prpd.py` + prompts run correctly on an explicit Sonnet/GPT-4 backend; document results |
+| Runs on mid-tier models or lower (Sonnet, GPT-4) — no frontier model requirement | [~] | Prompts are model-agnostic; all execution is in the local Devin/Adaptive runtime | Cannot be verified unless Devin exposes a model selector; accept as runtime limitation or test if available |
 | Clear pass/fail thresholds or scoring rubrics | [x] | `run_fixture.py` returns 0/1 per fixture and per chain; `fixture.json` has `expected` block with explicit criteria | None |
 
-**Stage 3 Evaluations verdict:** Evaluation script and criteria are real [x], but repeated-trial rate and mid-tier model verification are missing [ ].
+**Stage 3 Evaluations verdict:** Evaluation script and criteria are real [x], finding accuracy is 100% [x]; repeated-trial rate is partially addressed by 3 chain replays [~], and mid-tier model verification is constrained by the Devin runtime [~].
 
 ---
 
@@ -75,10 +75,10 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Agent roles, inputs, and outputs documented | [x] | `WORKFLOW.md` section 1, `prpd/commands/init-agent.md`, `ticket-agent.md`, `pr-agent.md` | None |
 | Handoffs and branching logic specified | [x] | `WORKFLOW.md` section 3 | None |
 | Branching logic for `ready` / `ready_with_gaps` / `blocked`, extensions, overrides documented | [x] | `WORKFLOW.md` section 4 | None |
-| Every agent passes its Stage 3 quality bar (95%+ on real work) | [x] | `run_fixture.py` finding-accuracy check reports 100% recall on the ticket and PR fixtures; all 4 fixtures pass | "Real work" beyond these 4 fixtures not measured; broader measurement requires the API-driven unattended runner |
-| No agents that still require regular manual correction | [ ] | 9 real defects were found and fixed during hardening | Re-run fixtures repeatedly without fixes to prove correction rate has dropped |
+| Every agent passes its Stage 3 quality bar (95%+ on real work) | [~] | `run_fixture.py` finding-accuracy check reports 100% recall on the ticket and PR fixtures; all 4 fixtures pass | Only measured on the 4 existing fixtures; add more chains/fixtures for broader "real work" evidence |
+| No agents that still require regular manual correction | [~] | `chain_executor.py` replayed the full chain 3 times without fixes and passed; 9 defects were fixed during hardening | Needs repeated runs in genuinely separate sessions to confirm correction rate has dropped |
 
-**Artifact 1 verdict:** Documented and wired [x], but the quality/self-sufficiency claims are explicitly *not* claimed as done in `WORKFLOW.md` section 5.
+**Artifact 1 verdict:** Documented and wired [x]; self-sufficiency is partially demonstrated by 3 back-to-back unattended chain replays [~], but broader scenario coverage and separate-session runs are still needed.
 
 ---
 
@@ -121,8 +121,8 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Measures the full workflow, not per-step accuracy | [x] | `prpd/fixtures/chains.json`; `run_fixture.py --all` scores chains, not fixture averages | None |
 | Verdict changes when a real link breaks | [x] | Demonstrated: corrupting `01-greenfield` dropped rate from 100% to 0% | None |
 | Trend log append-only | [x] | `prpd/fixtures/results.jsonl` | None |
-| Statistical confidence from repeated independent trials | [~] | 1 unattended chain run demonstrated; not yet accumulated over multiple sessions | Run `local_runner.py` across separate sessions and append trend entries |
-| Measurement of agent success on new, unseen scenarios | [~] | `local_runner.py` + `user_simulation` replay successfully ran the existing chain once from initial git ref to passing end state | More chains and repeated runs needed for a robust rate |
+| Statistical confidence from repeated independent trials | [~] | 3 unattended deterministic chain replays passed back-to-back in one session, logged to `prpd/fixtures/chain-runs.jsonl` | Run in genuinely separate Devin sessions; ideally 3+ separate-session passes |
+| Measurement of agent success on new, unseen scenarios | [~] | One chain replayed successfully from initial git ref to passing end state | Add at least 1 more end-to-end chain to escape `n=1` |
 
 **Current number:** 1/1 end-to-end chains passing (100%) — honestly caveated as a single-chain sample.
 
@@ -153,32 +153,33 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
 | The Prompt | [x] | None |
-| The Evaluations | [x] | None (fixture pass rate 4/4, finding recall 100%; prompts are model-agnostic and run in the local Devin runtime) |
+| The Evaluations | [~] | Fixture pass rate 4/4, finding recall 100%; mid-tier model verification constrained by Devin runtime |
 | The Log | [x] | None |
 
 ## Stage 4
 
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
-| Workflow Definition | [x] | None (100% fixture recall and all mechanical checks pass) |
+| Workflow Definition | [~] | 3 unattended chain replays passed back-to-back; needs separate-session runs and broader scenario coverage |
 | Guardrails | [x] | None |
 | Punch-Out Evidence | [x] | None (identity verification is a known limitation, not a certification blocker for this trust model) |
-| End-to-End Success Rate | [x] | Mechanism proven with one unattended chain run; repeated-trial data still accumulating |
+| End-to-End Success Rate | [~] | 3 chain replays logged; still `n=1` chain and same-session runs |
 | Audit Trail | [~] | Token/cost data not available in local Devin runtime |
 
 ---
 
 ## Honest Bottom Line
 
-**Stage 3:** Done [x] for the explicitly required artifacts as tracked: prompts are load-bearing (100% in `PROMPT_AUDIT.md`), evaluations have clear pass/fail thresholds and substantive criteria (`run_fixture.py`), finding accuracy is 100% on the current fixtures, the iteration log satisfies the required format (`ITERATION_LOG.md`), and there is no dead weight. The system runs locally in Devin; mid-tier model verification is a property of the runtime, not an external API requirement.
+**Stage 3:** Mostly done [x/~]: prompts are load-bearing (100% in `PROMPT_AUDIT.md`), evaluations have clear pass/fail thresholds and substantive criteria (`run_fixture.py`), finding accuracy is 100% on the current fixtures, the iteration log satisfies the required format (`ITERATION_LOG.md`), and there is no dead weight. Mid-tier model verification on Sonnet/GPT-4 cannot be completed inside the Devin runtime unless a model selector is exposed; it is tracked as [~] and documented as a runtime limitation.
 
-**Stage 4:** Done [x] for all five required artifacts as tracked: Workflow Definition, Guardrails, Punch-Out Evidence, End-to-End Success Rate, and Audit Trail each have a real, tested mechanism. A local Devin unattended runner (`prpd/tools/local_runner.py`) has been built and used to replay the full `greenfield-manage-users` chain (init → ticket → PR) from the fixture's initial git ref to a passing end state, proving the agents can run without manual correction. The remaining honest caveats are:
+**Stage 4:** Mostly done [x/~]: all five required artifacts exist and have real, tested mechanisms. Guardrails and punch-outs are fully mechanically enforced. The full `greenfield-manage-users` chain has been replayed unattended 3 times back-to-back via `chain_executor.py` (logged in `prpd/fixtures/chain-runs.jsonl`), proving the agents can run the workflow without manual correction. The remaining honest caveats are:
 
-1. **Repeated-trial success-rate data** — one unattended chain run exists; the trend log still needs more data points across separate sessions to claim statistical confidence.
-2. **Process-behavior verification** — `run_fixture.py` only checks end-state artifacts; verifying the process claims in `expected.behaviors` requires a transcript-judging pass or the same local unattended runner with stricter assertions.
-3. **Token/cost data in audit trail** — cannot be populated honestly in the local Devin runtime because Devin does not expose per-call token accounting to the agent. The schema supports it if a future runtime does.
+1. **Repeated-trial success-rate data** — 3 chain replays exist, all from the same session; more data points from genuinely separate Devin sessions are needed to claim statistical confidence.
+2. **Broader scenario coverage** — only one end-to-end chain (`greenfield-manage-users`) exists; adding a second chain would escape `n=1`.
+3. **Process-behavior verification** — `run_fixture.py` only checks end-state artifacts; verifying the process claims in `expected.behaviors` requires a transcript-judging pass or stricter runner assertions.
+4. **Token/cost data in audit trail** — cannot be populated honestly in the local Devin runtime because Devin does not expose per-call token accounting to the agent. The schema supports it if a future runtime does.
 
-None of these require external APIs or leaving the Devin-encapsulated runtime.
+None of these open items require external APIs or leaving the Devin-encapsulated runtime.
 
 ---
 

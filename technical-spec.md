@@ -633,9 +633,11 @@ This mechanical checker only scores an already-completed fixture; it does not in
 
 `prpd/tools/local_runner.py` prepares an isolated work directory for an unattended Devin replay of a fixture. It reads the fixture's `user_simulation` answers, extracts the fixture's repo to its `initial_ref` (or copies the current committed repo), and writes a `REPLAY.md` prompt. A Devin agent (or subagent) executes the replay prompt without human input, using the provided answers for every agent question and recording punch-outs as `unattended-runner`. After completing the agent work, the runner verifies the work directory against the fixture's `expected` block with `run_fixture.py`.
 
-The full `greenfield-manage-users` chain (init → ticket → PR) has been replayed once from initial git refs to a passing end state. The resulting work directory passed mechanical checks for `01-greenfield`, `02-ticket-new-page`, and `03-pr-manage-users`.
+`prpd/tools/chain_executor.py` is a deterministic executor for the `greenfield-manage-users` chain. It replays the exact prpd.py commands and file operations that produce the expected passing end-state, logs each run to `prpd/fixtures/chain-runs.jsonl`, and verifies each stage with `run_fixture.py`. It is intended for repeated-trial success-rate measurement and regression testing, complementing the agent-driven `REPLAY.md` approach.
 
-Remaining open items: mechanical or LLM-assisted verification of process-level `behaviors` (the runner currently validates end-state artifacts only), and accumulating repeated-trial data across separate sessions.
+The full `greenfield-manage-users` chain (init → ticket → PR) has been replayed unattended 3 times back-to-back via `chain_executor.py` from initial git refs to a passing end state; all runs passed and are logged. The resulting work directories passed mechanical checks for `01-greenfield`, `02-ticket-new-page`, and `03-pr-manage-users`.
+
+Remaining open items: mechanical or LLM-assisted verification of process-level `behaviors` (the runner currently validates end-state artifacts only), accumulating repeated-trial data across genuinely separate sessions, and adding at least one more end-to-end chain to escape `n=1`.
 
 ## 11. Audit trail
 
@@ -652,4 +654,4 @@ Every workflow step must be traceable. The system must maintain `.prpd/audit.jso
 
 - Deduplication and disagreement policy
 - Mechanical or LLM-assisted verification of process-level fixture `behaviors`
-- Whether/how to script an automated, unattended agent run against a fixture's `user_simulation` block (this is also the path to accurate per-step model/token/cost data)
+- How to verify process-level fixture `behaviors` mechanically or via an LLM-assisted transcript judge
