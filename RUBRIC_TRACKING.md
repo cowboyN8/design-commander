@@ -29,10 +29,10 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 | Markdown file containing the practitioner's prompt or command | [x] | `prpd/commands/init-agent.md`, `prpd/commands/ticket-agent.md`, `prpd/commands/pr-agent.md`, `prpd/commands/guardrail-challenge.md` | None |
 | Follows structured prompting (RTCC or similar) | [~] | Prompts use role, task, context, constraints, step numbering, tool-call conventions, and explicit output schemas | No formal RTCC audit performed; structure is present but not labeled against a standard |
 | Demonstrates deliberate instruction design | [x] | Each prompt is purpose-built for its stage and references the mechanical helper, schema, and confidence thresholds | None |
-| Load-Bearing Principle: >=90% of instructions must be load-bearing | [ ] | Not measured | Audit each prompt line against the evaluation criteria in `run_fixture.py` / `fixture.json`; remove or justify any instruction that does not serve an evaluation |
-| No dead weight or filler text | [~] | Prompts are concise but have not been audited for filler | Same load-bearing audit will surface filler |
+| Load-Bearing Principle: >=90% of instructions must be load-bearing | [x] | `PROMPT_AUDIT.md` audits 106 instructions across 4 prompt files; all 106 are load-bearing (100%) | None |
+| No dead weight or filler text | [x] | `PROMPT_AUDIT.md` found no filler; every instruction maps to a criterion or a justified meta-instruction | None |
 
-**Stage 3 Prompt verdict:** Prompts exist and are well-structured [x], but the quantitative load-bearing audit has not been performed [ ].
+**Stage 3 Prompt verdict:** Done [x] — prompts exist, are well-structured, and `PROMPT_AUDIT.md` confirms 106/106 instructions are load-bearing (100%).
 
 ---
 
@@ -151,7 +151,7 @@ This file tracks the project against both the **Stage 3** and **Stage 4** certif
 
 | Artifact | Overall | Blockers to Close It |
 |---|---|---|
-| The Prompt | [~] | Load-bearing audit of every instruction; remove/justify filler |
+| The Prompt | [x] | None |
 | The Evaluations | [~] | Repeated-trial pass rate on same fixtures; mid-tier model verification |
 | The Log | [x] | None |
 
@@ -187,3 +187,4 @@ These three are effectively the same architectural next step: build an unattende
 | 2026-09-25 | Initial rubric tracking checklist created after completing the Stage 4 five-artifact hardening pass. |
 | 2026-09-25 | Added Stage 3 requirements (The Prompt, The Evaluations, The Log) after receiving both rubric images. |
 | 2026-09-25 | Closed Punch-Out Evidence gaps: `roadmap_approved` and `reconciliation_decision` are now mechanically enforced and bypass-tested; resolved Guardrails intra-step vs inter-step framing. |
+| 2026-09-25 | Completed Stage 3 Prompt load-bearing audit: `PROMPT_AUDIT.md` maps 106 instructions across 4 prompt files to evaluation criteria with 100% load-bearing, no filler identified. |
