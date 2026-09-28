@@ -2,6 +2,8 @@
 
 `.prpd/audit.jsonl` is an append-only, structured log. Every `prpd.py` helper call automatically logs a `helper_call` entry (timestamp, command, step, result); agents additionally emit `agent_event` entries for judgment moments via `prpd.py audit <event>`.
 
+> Per-step `tokens_in`, `tokens_out`, and `cost_usd` are intentionally null because Devin's local agent runtime does not expose per-call token counts or cost. Fabricating values would break audit integrity. The schema supports these fields if a future runtime provides them.
+
 ## Coverage of all workflow steps — now enforced, not just requested
 
 Every mutating, decision-producing command (`baseline new/set/append`, `ticket upsert/resolve`, `guardrail init-to-ticket/ticket-to-pr`, `punchout record`, `audit`) now requires `--step` — argparse refuses to run without it. Read-only inspection commands (`validate`, `check-files`, `ticket get`, `guardrail status`, `punchout log`) don't produce new state, so `--step` stays optional there.
