@@ -5,3 +5,5 @@
 {"ts": "2026-09-25T16:08:07.374651+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-chain-run-d"}
 {"ts": "2026-09-28T18:04:17.856802+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-session-1-manage"}
 {"ts": "2026-09-28T18:04:19.871859+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-1-landing"}
+{"ts": "2026-09-28T18:06:59.406477+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-session-2-manage"}
+{"ts": "2026-09-28T18:07:08.063739+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-2-landing"}
