@@ -9,3 +9,13 @@
 {"ts": "2026-09-28T18:07:08.063739+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-2-landing"}
 {"ts": "2026-09-28T18:08:51.529631+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-session-3-manage"}
 {"ts": "2026-09-28T18:08:52.426036+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-3-landing"}
+{"ts": "2026-09-28T18:14:57.369399+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-landing-test"}
+{"ts": "2026-09-28T18:22:47.937307+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-landing-fixed3"}
+{"ts": "2026-09-28T18:22:55.918828+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-manage-fixed"}
+{"ts": "2026-09-28T18:25:04.574988+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-revalidated-1-manage"}
+{"ts": "2026-09-28T18:25:05.949032+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-revalidated-1-landing"}
+{"ts": "2026-09-28T18:25:07.632665+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-revalidated-2-manage"}
+{"ts": "2026-09-28T18:25:09.024011+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-revalidated-2-landing"}
+{"ts": "2026-09-28T18:25:10.666257+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-revalidated-3-manage"}
+{"ts": "2026-09-28T18:25:12.036944+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-revalidated-3-landing"}
+{"ts": "2026-09-28T18:28:58.749159+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-audit-stamp"}

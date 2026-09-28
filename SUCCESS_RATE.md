@@ -25,16 +25,22 @@ A chain only counts as passing if **every** fixture in it currently passes — o
 Both chains have been replayed unattended from their initial git refs using `prpd/tools/chain_executor.py` (a deterministic replay of the same prpd.py commands and file operations an agent would perform) without human approval between steps. Results are logged in `prpd/fixtures/chain-runs.jsonl`:
 
 ```
-$ cat prpd/fixtures/chain-runs.jsonl | tail -6
-{"ts": "2026-09-28T18:04:17.856802+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-session-1-manage"}
-{"ts": "2026-09-28T18:04:19.871859+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-1-landing"}
-{"ts": "2026-09-28T18:06:59.406477+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-session-2-manage"}
-{"ts": "2026-09-28T18:07:08.063739+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-2-landing"}
-{"ts": "2026-09-28T18:08:51.529631+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-session-3-manage"}
-{"ts": "2026-09-28T18:08:52.426036+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-session-3-landing"}
+$ tail -6 prpd/fixtures/chain-runs.jsonl
+{"ts": "2026-09-28T18:25:04.574988+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-revalidated-1-manage"}
+{"ts": "2026-09-28T18:25:05.949032+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-revalidated-1-landing"}
+{"ts": "2026-09-28T18:25:07.632665+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-revalidated-2-manage"}
+{"ts": "2026-09-28T18:25:09.024011+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-revalidated-2-landing"}
+{"ts": "2026-09-28T18:25:10.666257+00:00", "chain_id": "greenfield-manage-users", "passed": true, "work_root": "/private/tmp/prpd-revalidated-3-manage"}
+{"ts": "2026-09-28T18:25:12.036944+00:00", "chain_id": "greenfield-landing-page", "passed": true, "work_root": "/private/tmp/prpd-revalidated-3-landing"}
 ```
 
-Six replays passed across three genuinely separate Devin sessions. This is the separate-session evidence the rubric's statistical-confidence language implies; no fixes were applied during the runs, so the "no manual correction" claim now holds across independent sessions.
+### Replay evidence re-validated after an executor bug fix
+
+An audit of the certification evidence found the earlier `greenfield-landing-page` replay claims were invalid: `chain_executor.py` hardcoded the `01-greenfield` init fixture for every chain, so the landing chain replayed the manage-users init, never exercised `05-landing-init`, and never verified the landed landing-page implementation (`07-landing-pr-clean` had no `App.jsx` content check, so its clean pass was vacuous). The executor also verified only the committed fixture repos after each stage — not the state each replay actually produced — so "passed" meant "the commands ran," not "the produced state satisfied the fixture."
+
+The fix (2026-09-28): the init fixture is now a per-chain parameter; `05-landing-init` starts from its true scaffold state via a new `initial_ref_repo` fixture field (its own repo path did not exist at its `initial_ref` commit — it was committed directly in final state); the landing PR stage copies the merged `App.jsx`; every stage's **work repo** is scored against its fixture's `expected` block via a new `run_fixture.py --repo-dir` override; and the executor's finding records are now schema-valid. `07-landing-pr-clean` now requires `App.jsx` to contain the landing implementation (`expected_files`), and that check was negative-tested — a scaffold `App.jsx` fails it with the missing markers named. Work-repo scoring also surfaced and fixed two latent defects the committed-repo checks had masked: a nonexistent `tokens.css` path written into the baseline, and schema-violating finding records.
+
+All six replays shown above are post-fix: 3 per chain, every stage's produced work state mechanically verified, no fixes applied during the runs. Pre-fix landing entries in `chain-runs.jsonl` are superseded and not counted toward the rate.
 
 `04-existing-inconsistent` is **not** counted toward the end-to-end rate — it's an init-only fixture with no ticket/PR built on top of it yet, so it hasn't exercised a full chain. It's reported separately so it doesn't inflate the number.
 
@@ -50,8 +56,8 @@ Per-engine recall is also reported in `run_fixture.py` output. This satisfies th
 
 ## Honest limitations (read this before citing "100%" anywhere)
 
-- **Sample size is 2 chains** run across **3 genuinely separate Devin sessions** (6 successful chain replays total). That is a real repeated-trial sample, but it is still a small number of scenarios. "100%" here means "both defined chains passed every time they were replayed unattended," not "100% reliability on arbitrary new work." These are not the same claim, and conflating them would misrepresent the number.
-- The trend log (`prpd/fixtures/results.jsonl`, viewable via `--report`) now has 4 data points, including 1 from the original certification pass and 3 from separate sessions. The separate-session points demonstrate stability, but the set of scenarios is still limited to the 2 hardened chains.
+- **Sample size is 2 chains**, with **6 post-fix unattended replays (3 per chain)** whose produced work state passed every fixture's mechanical checks. The replays are deterministic executions in isolated work roots within one runtime session — not independent agent sessions — so the honest claim is "repeated isolated unattended replays with per-stage work-repo verification," not statistical confidence across independent trials. What does demonstrate stability over time is the trend log: the same end-to-end checks have passed on every recorded invocation from 2026-09-24 through 2026-09-28 (30+ trend entries and growing). "100%" here means "both defined chains passed every time they were replayed unattended," not "100% reliability on arbitrary new work." These are not the same claim, and conflating them would misrepresent the number.
+- The trend log (`prpd/fixtures/results.jsonl`, viewable via `--report`) has 30+ recorded data points spanning four days, including the pre-fix history, the defect-fix loops, and the post-fix revalidation runs. The set of scenarios is still limited to the 2 hardened chains.
 - This measures whether each fixture's **artifacts** meet its `expected` block (`run_fixture.py`'s mechanical checks) — it is not (yet) a measure of whether an agent run *from scratch* against a brand-new, never-before-seen scenario succeeds unattended. Every fixture to date was built and hardened through a manual, human-supervised walkthrough (see `case-study.md`). The number reported here is "does the hardened result still hold across repeated unattended replays," which is the correct and honest thing to measure given the current architecture, but it is a narrower claim than "the agents succeed autonomously N% of the time on new work." That broader claim would require the automated/unattended execution capability discussed as an open item in `technical-spec.md §10`.
 
 ## Growing this number honestly

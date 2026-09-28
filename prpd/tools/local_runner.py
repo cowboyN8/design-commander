@@ -78,7 +78,10 @@ def setup_work_dir(fixture_dir: Path, work_dir: Path, previous_repo: Path = None
 
     If the fixture declares `initial_ref`, the work repo is extracted from
     that git commit so the agent starts from the fixture's initial state rather
-    than its committed final state.
+    than its committed final state. `initial_ref_repo` optionally names a
+    different repo directory (relative to the fixture dir) to extract at that
+    ref -- for fixtures whose own repo path did not exist at the ref (e.g.
+    05-landing-init, whose starting state is 01-greenfield's scaffold).
     """
     fixture = load_json(fixture_dir / "fixture.json")
     work_dir = Path(work_dir).resolve()
@@ -100,7 +103,9 @@ def setup_work_dir(fixture_dir: Path, work_dir: Path, previous_repo: Path = None
 
     ref = fixture.get("initial_ref")
     if ref and not previous_repo:
-        _extract_repo_at_ref(src_repo, dest_repo, ref)
+        ref_repo = fixture.get("initial_ref_repo")
+        extract_src = (fixture_dir / ref_repo).resolve() if ref_repo else src_repo
+        _extract_repo_at_ref(extract_src, dest_repo, ref)
     else:
         shutil.copytree(src_repo, dest_repo)
 

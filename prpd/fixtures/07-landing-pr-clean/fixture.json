@@ -14,6 +14,9 @@
   "expected": {
     "final_verdict": "pass",
     "expected_findings": [],
+    "expected_files": [
+      { "path": "src/App.jsx", "contains": ["Welcome", "Invite people", "Button"] }
+    ],
     "behaviors": [
       "verifies PR diff uses only approved components",
       "runs all three engines and finds no blockers",

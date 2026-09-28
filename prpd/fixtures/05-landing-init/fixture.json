@@ -21,6 +21,7 @@
     ]
   },
   "initial_ref": "cbe31008cad8446f2c0c8de681f620cff1966bda",
+  "initial_ref_repo": "../01-greenfield/repo",
   "user_simulation": {
     "notes": "Expected answers a simulated user would give during init.",
     "stack": { "framework": "react", "styling": "css-modules" },

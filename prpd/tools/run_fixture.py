@@ -7,7 +7,9 @@ any agent and does not simulate a user — it inspects the repo as it sits on
 disk right now.
 
 Usage:
-    python3 prpd/tools/run_fixture.py <fixture-dir>   # score one fixture
+    python3 prpd/tools/run_fixture.py <fixture-dir> [--repo-dir PATH]
+        # score one fixture; --repo-dir scores an explicit work repo instead
+        # of the fixture's committed repo (used by chain_executor.py)
     python3 prpd/tools/run_fixture.py --all           # score every fixture under prpd/fixtures/
 
 Exit code is non-zero if any fixture fails a check.
@@ -226,8 +228,29 @@ def check_punchout_recorded(repo_dir: Path, point_id: str) -> Result:
     return Result(f"punch-out recorded: {point_id}", found, "" if found else f"no entry for {point_id}")
 
 
-def score_init_fixture(fixture_dir: Path, fixture: dict):
-    repo_dir = fixture_dir / "repo"
+def check_expected_files(repo_dir: Path, expected_files: list) -> list:
+    """Verify named files exist and contain expected markers -- e.g. a PR
+    fixture's merged implementation actually being present, not just the
+    verdict math passing around an empty repo."""
+    results = []
+    for spec in expected_files:
+        path = repo_dir / spec["path"]
+        if not path.is_file():
+            results.append(Result(f"file content: {spec['path']}", False, f"{path} does not exist"))
+            continue
+        text = path.read_text()
+        missing = [m for m in spec.get("contains", []) if m not in text]
+        ok_ = not missing
+        results.append(Result(
+            f"file content: {spec['path']}",
+            ok_,
+            "" if ok_ else f"missing expected content: {missing}",
+        ))
+    return results
+
+
+def score_init_fixture(fixture_dir: Path, fixture: dict, repo_override: Path = None):
+    repo_dir = repo_override if repo_override else fixture_dir / "repo"
     expected = fixture.get("expected", {})
     baseline_path = repo_dir / ".prpd" / "baseline.json"
 
@@ -276,11 +299,13 @@ def check_gate_file(repo_dir: Path, gate_name: str) -> Result:
     return Result(f"guardrail gate present: {gate_name}", ok_, detail)
 
 
-def score_ticket_fixture(fixture_dir: Path, fixture: dict):
-    target = fixture.get("target_repo")
-    if not target:
+def score_ticket_fixture(fixture_dir: Path, fixture: dict, repo_override: Path = None):
+    if repo_override:
+        repo_dir = repo_override
+    elif fixture.get("target_repo"):
+        repo_dir = (fixture_dir / fixture["target_repo"]).resolve()
+    else:
         return [Result("target_repo resolves", False, "fixture.json has no target_repo")]
-    repo_dir = (fixture_dir / target).resolve()
     if not repo_dir.is_dir():
         return [Result("target_repo resolves", False, f"{repo_dir} does not exist")]
 
@@ -391,11 +416,13 @@ def check_override_recorded(repo_dir: Path, ticket_id: str, finding_id: str) -> 
     )
 
 
-def score_pr_fixture(fixture_dir: Path, fixture: dict):
-    target = fixture.get("target_repo")
-    if not target:
+def score_pr_fixture(fixture_dir: Path, fixture: dict, repo_override: Path = None):
+    if repo_override:
+        repo_dir = repo_override
+    elif fixture.get("target_repo"):
+        repo_dir = (fixture_dir / fixture["target_repo"]).resolve()
+    else:
         return [Result("target_repo resolves", False, "fixture.json has no target_repo")]
-    repo_dir = (fixture_dir / target).resolve()
     if not repo_dir.is_dir():
         return [Result("target_repo resolves", False, f"{repo_dir} does not exist")]
 
@@ -410,20 +437,23 @@ def score_pr_fixture(fixture_dir: Path, fixture: dict):
     expected_findings = expected.get("expected_findings")
     if expected_findings:
         results.append(check_finding_accuracy(repo_dir, ticket_id, expected_findings))
+    expected_files = expected.get("expected_files")
+    if expected_files:
+        results.extend(check_expected_files(repo_dir, expected_files))
     return results
 
 
-def score_fixture(fixture_dir: Path):
+def score_fixture(fixture_dir: Path, repo_override: Path = None):
     fixture_path = fixture_dir / "fixture.json"
     fixture = load_json(fixture_path)
     stage = fixture.get("stage")
 
     if stage == "init":
-        results = score_init_fixture(fixture_dir, fixture)
+        results = score_init_fixture(fixture_dir, fixture, repo_override)
     elif stage == "ticket":
-        results = score_ticket_fixture(fixture_dir, fixture)
+        results = score_ticket_fixture(fixture_dir, fixture, repo_override)
     elif stage == "pr":
-        results = score_pr_fixture(fixture_dir, fixture)
+        results = score_pr_fixture(fixture_dir, fixture, repo_override)
     else:
         results = [Result(f"stage '{stage}' scoring", False, "no mechanical checks implemented for this stage yet")]
 
@@ -528,15 +558,32 @@ def print_trend():
 
 
 def main():
-    if len(sys.argv) != 2:
+    argv = sys.argv[1:]
+    if not argv:
         print(__doc__)
         sys.exit(2)
 
-    arg = sys.argv[1]
+    repo_override = None
+    if "--repo-dir" in argv:
+        i = argv.index("--repo-dir")
+        if i + 1 >= len(argv):
+            print("--repo-dir requires a path argument", file=sys.stderr)
+            sys.exit(2)
+        repo_override = Path(argv[i + 1]).resolve()
+        argv = argv[:i] + argv[i + 2:]
+
+    if len(argv) != 1:
+        print(__doc__)
+        sys.exit(2)
+
+    arg = argv[0]
     if arg == "--report":
         print_trend()
         sys.exit(0)
     if arg == "--all":
+        if repo_override:
+            print("--repo-dir cannot be combined with --all", file=sys.stderr)
+            sys.exit(2)
         fixture_dirs = sorted(
             p.parent for p in FIXTURES_DIR.glob("*/fixture.json")
         )
@@ -551,7 +598,7 @@ def main():
     passed_count = 0
     fixture_results = {}
     for fixture_dir in fixture_dirs:
-        fixture_id, results, unverified_behaviors = score_fixture(fixture_dir)
+        fixture_id, results, unverified_behaviors = score_fixture(fixture_dir, repo_override)
         ok = print_report(fixture_id, results, unverified_behaviors)
         all_passed = all_passed and ok
         passed_count += 1 if ok else 0

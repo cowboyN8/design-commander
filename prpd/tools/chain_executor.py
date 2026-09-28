@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Deterministic executor for the `greenfield-manage-users` fixture chain.
+"""Deterministic executor for the fixture chains (`greenfield-manage-users`,
+`greenfield-landing-page`).
 
 This is *not* an LLM agent — it replays the exact prpd.py commands and file
 operations that produce the expected passing end-state for the chain. Its
 purpose is to generate repeated-trial success-rate data and prove the
 workflow can run end to end without a human approving each step or fixing
-things along the way.
+things along the way. Each stage's *work repo* (not the committed fixture
+repo) is scored against that fixture's expected block via
+run_fixture.py --repo-dir, so a replay only counts as passed if the state it
+produced actually satisfies the fixture's mechanical checks.
 
 For a genuine agent-driven unattended run, use `local_runner.py` and execute
 the generated `REPLAY.md` with a Devin agent.
 
 Usage:
     python3 prpd/tools/chain_executor.py --work-root /tmp/prpd-chain-run-1
-    python3 prpd/tools/chain_executor.py --work-root /tmp/prpd-chain-run-2
-    python3 prpd/tools/chain_executor.py --work-root /tmp/prpd-chain-run-3
+    python3 prpd/tools/chain_executor.py --work-root /tmp/prpd-landing-run-1 \
+        --chain greenfield-landing-page
 
 After one or more successful runs, update the trend log:
     python3 prpd/tools/run_fixture.py --all
@@ -58,7 +62,16 @@ def run(cmd: list, cwd: Path = None) -> None:
 
 
 def prpd(cmd: list, repo_dir: Path) -> None:
-    run([sys.executable, str(PRPD_PY)] + cmd + ["--repo-dir", str(repo_dir)])
+    # The executor's steps involve no LLM call, so their audit entries carry
+    # real values: a distinguishing model id and zero tokens/cost. This
+    # populates the audit schema's token/cost fields honestly everywhere the
+    # caller knows them (agent-driven runs leave them null instead -- see
+    # AUDIT_TRAIL.md for the resolved policy).
+    run([sys.executable, str(PRPD_PY)] + cmd + [
+        "--model", "chain-executor-deterministic",
+        "--tokens-in", "0", "--tokens-out", "0", "--cost", "0",
+        "--repo-dir", str(repo_dir),
+    ])
 
 
 def setup_stage(agent: str, fixture: str, work_dir: Path, previous: Path = None) -> Path:
@@ -80,34 +93,38 @@ def copytree(src: Path, dst: Path) -> None:
     shutil.copytree(src, dst)
 
 
-def finding(fid: str, engine: str, severity: str, location: str,
-            description: str, fix: str, confidence: float, step: str,
+def finding(fid: str, engine: str, severity: str, title: str, location: str,
+            description: str, fix: str, confidence: float,
             status: str = "open", low_confidence: bool = False,
-            source: str = "pr-agent") -> str:
+            traceability: str = "none") -> str:
+    """Schema-valid finding record (see prpd/schemas/tickets.schema.json):
+    title required, location is a {file, lines} object, traceability is one
+    of baseline|extension|exception|none."""
     return json.dumps({
         "id": fid,
         "engine": engine,
         "severity": severity,
-        "location": location,
+        "title": title,
+        "location": {"file": location, "lines": []},
         "description": description,
         "suggested_fix": fix,
         "confidence": confidence,
-        "traceability": {"source": source, "step": step},
+        "traceability": traceability,
         "low_confidence": low_confidence,
         "status": status,
     })
 
 
-def run_init_stage(work_dir: Path) -> Path:
-    repo_dir = setup_stage("init-agent", "01-greenfield", work_dir / "init")
-    fixture_repo = FIXTURES_DIR / "01-greenfield" / "repo"
+def run_init_stage(work_dir: Path, fixture_id: str = "01-greenfield") -> Path:
+    repo_dir = setup_stage("init-agent", fixture_id, work_dir / "init")
+    fixture_repo = FIXTURES_DIR / fixture_id / "repo"
 
     prpd(["check-files"], repo_dir)
 
     prpd(["baseline", "set", "stack",
           json.dumps({"framework": "react", "styling": "css-modules",
                       "component_dir": "src/design-system",
-                      "token_files": ["src/design-system/tokens.css"]}),
+                      "token_files": []}),
           "--step", "init.stack"], repo_dir)
     prpd(["punchout", "record", "stack_confirmed",
           "--decision", "react+css-modules",
@@ -192,7 +209,8 @@ def run_init_stage(work_dir: Path) -> Path:
     prpd(["baseline", "set", "library_page", json.dumps("library.html"),
           "--step", "init.library"], repo_dir)
 
-    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "01-greenfield")])
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / fixture_id),
+         "--repo-dir", str(repo_dir)])
     return repo_dir
 
 
@@ -203,22 +221,26 @@ def run_ticket_stage(init_repo: Path, work_dir: Path) -> Path:
     prpd(["guardrail", "init-to-ticket", "--step", "ticket.guardrail"], repo_dir)
 
     findings = [
-        finding("ux_pattern-1", "ux_pattern", "blocker", "App.jsx",
+        finding("ux_pattern-1", "ux_pattern", "blocker",
+                "First real screen with no established page pattern", "App.jsx",
                 "App.jsx is still a placeholder; the ticket is the first real screen but no design-system page pattern has been established for it.",
                 "Use /ticket-agent to drive the page-level pattern and route it through the approved components, not ad hoc markup.",
-                0.85, "ticket.readiness", source="ticket-agent"),
-        finding("ux_pattern-2", "ux_pattern", "blocker", "baseline.gaps",
+                0.85),
+        finding("ux_pattern-2", "ux_pattern", "blocker",
+                "Ticket directly triggers a recorded baseline gap", "baseline.gaps",
                 "baseline.gaps already lists large_components_and_page_patterns as a gap; this ticket directly falls into that gap.",
                 "Record this ticket as the triggering work item and build the required Table extension before marking ready.",
-                0.9, "ticket.readiness", source="ticket-agent"),
-        finding("accessibility-1", "accessibility", "blocker", "App.jsx",
+                0.9),
+        finding("accessibility-1", "accessibility", "blocker",
+                "No main landmark or h1 established", "App.jsx",
                 "No landmark main element or h1 has been established for the first real page.",
                 "Establish a page shell with main landmark and h1 as part of the ticket implementation or page pattern.",
-                0.9, "ticket.readiness", source="ticket-agent"),
-        finding("convention-1", "convention", "blocker", "baseline.components",
+                0.9),
+        finding("convention-1", "convention", "blocker",
+                "No Table component exists in the baseline", "baseline.components",
                 "No Table component exists in the baseline; the ticket requires a table.",
                 "Approve Table as a shared extension and add it to baseline.components with source ticket-agent:TICKET-101.",
-                0.95, "ticket.readiness", source="ticket-agent"),
+                0.95),
     ]
     cmd = ["ticket", "upsert", "TICKET-101",
            "--decision", "error_state: inline error banner with a retry action",
@@ -251,7 +273,8 @@ def run_ticket_stage(init_repo: Path, work_dir: Path) -> Path:
     prpd(["guardrail", "init-to-ticket", "--step", "ticket.guardrail"], repo_dir)
     prpd(["guardrail", "ticket-to-pr", "TICKET-101", "--step", "ticket.guardrail"], repo_dir)
 
-    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "02-ticket-new-page")])
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "02-ticket-new-page"),
+         "--repo-dir", str(repo_dir)])
     return repo_dir
 
 
@@ -264,63 +287,63 @@ def run_pr_stage(ticket_repo: Path, work_dir: Path) -> Path:
 
     findings = [
         finding("convention-2", "convention", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "StatusPill not traced to baseline", "src/features/manage-users/ManageUsersPage.jsx",
                 "StatusPill component is not traced to baseline; must reuse approved Badge.",
-                "Replace StatusPill with Badge and approved variants.", 0.92, "pr.engine.convention", status="fixed"),
+                "Replace StatusPill with Badge and approved variants.", 0.92, status="fixed"),
         finding("convention-3", "convention", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "Hand-rolled error banner duplicates Table error/onRetry", "src/features/manage-users/ManageUsersPage.jsx",
                 "Hand-rolled error banner does not use Table's approved error/onRetry props.",
-                "Use Table component's error variant with onRetry.", 0.9, "pr.engine.convention", status="fixed"),
+                "Use Table component's error variant with onRetry.", 0.9, status="fixed"),
         finding("convention-4", "convention", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "New feature directory not covered by approved page patterns", "src/features/manage-users/ManageUsersPage.jsx",
                 "Changed files include a new feature directory not covered by approved page patterns.",
                 "Record the page pattern or justify as within scope of approved extension.",
-                0.85, "pr.engine.convention", status="fixed"),
+                0.85, status="fixed"),
         finding("accessibility-2", "accessibility", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "Empty-state acceptance criterion not implemented", "src/features/manage-users/ManageUsersPage.jsx",
                 "Empty-state acceptance criterion is not implemented (no empty message).",
                 "Add an empty state with visible text and appropriate aria-live.", 0.88,
-                "pr.engine.accessibility", status="fixed", source="pr-agent"),
+                status="fixed", traceability="baseline"),
         finding("accessibility-3", "accessibility", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "Hardcoded text color reintroduces contrast failure", "src/features/manage-users/ManageUsersPage.jsx",
                 "Hardcoded text color reintroduces contrast failure against light surface.",
                 "Use approved semantic text/surface color tokens.", 0.91,
-                "pr.engine.accessibility", status="fixed", source="pr-agent"),
+                status="fixed", traceability="baseline"),
         finding("ux_pattern-3", "ux_pattern", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "StatusPill diverges from approved Badge status mapping", "src/features/manage-users/ManageUsersPage.jsx",
                 "StatusPill visual treatment diverges from approved Badge status mapping.",
                 "Use Badge with neutral/success/warning/danger variants.", 0.87,
-                "pr.engine.ux_pattern", status="fixed"),
+                status="fixed", traceability="baseline"),
         finding("ux_pattern-4", "ux_pattern", "advisory",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "Loading state not explicitly announced", "src/features/manage-users/ManageUsersPage.jsx",
                 "Loading state could be more explicitly announced.",
                 "Use aria-busy and live region for loading state.", 0.7,
-                "pr.engine.ux_pattern", status="fixed"),
+                status="fixed", traceability="baseline"),
         finding("accessibility-4", "accessibility", "advisory",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "Sortable table headers do not expose sort state", "src/features/manage-users/ManageUsersPage.jsx",
                 "Sortable table headers could expose state more clearly.",
                 "Use aria-sort and button roles on sortable headers.", 0.72,
-                "pr.engine.accessibility", status="fixed", source="pr-agent"),
+                status="fixed", traceability="baseline"),
         finding("convention-5", "convention", "advisory",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "Mixed-case imports in kebab-case feature directory", "src/features/manage-users/ManageUsersPage.jsx",
                 "Feature directory name manage-users is kebab-case but component imports use mixed casing.",
                 "Standardize import paths to kebab-case directory name.", 0.75,
-                "pr.engine.convention", status="fixed"),
+                status="fixed"),
         finding("convention-6", "convention", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "DevControls uses inline styles instead of CSS Modules", "src/features/manage-users/ManageUsersPage.jsx",
                 "DevControls uses inline styles instead of CSS Modules.",
                 "Refactor to CSS Modules or record a ticket-scoped exception.", 0.93,
-                "pr.engine.convention", status="open"),
+                status="open", traceability="baseline"),
         finding("convention-7", "convention", "advisory",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                "QA-only DevControls scaffolding ships to production", "src/features/manage-users/ManageUsersPage.jsx",
                 "QA-only scaffolding DevControls should not ship to production.",
                 "Remove from production build or gate behind environment.", 0.76,
-                "pr.engine.convention", status="fixed"),
-        finding("guardrail-challenge-1", "guardrail-challenge", "blocker",
-                "src/features/manage-users/ManageUsersPage.jsx",
+                status="fixed"),
+        finding("guardrail-challenge-1", "convention", "blocker",
+                "Inline styles on production main elements (adversarial review)", "src/features/manage-users/ManageUsersPage.jsx",
                 "Adversarial review found inline styles on production main elements.",
                 "Move styles to CSS Modules and reference approved tokens.", 0.89,
-                "pr.guardrail.challenge", status="fixed", source="guardrail-challenge"),
+                status="fixed", traceability="baseline"),
     ]
     cmd = ["ticket", "upsert", "TICKET-101", "--step", "pr.engines"]
     for f in findings:
@@ -333,7 +356,8 @@ def run_pr_stage(ticket_repo: Path, work_dir: Path) -> Path:
           "--by", "unattended-runner",
           "--step", "pr.resolve"], repo_dir)
 
-    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "03-pr-manage-users")])
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "03-pr-manage-users"),
+         "--repo-dir", str(repo_dir)])
     return repo_dir
 
 
@@ -352,14 +376,20 @@ def run_landing_ticket_stage(init_repo: Path, work_dir: Path) -> Path:
     prpd(["guardrail", "init-to-ticket", "--step", "ticket.guardrail"], repo_dir)
     prpd(["guardrail", "ticket-to-pr", "TICKET-201", "--step", "ticket.guardrail"], repo_dir)
 
-    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "06-landing-ticket")])
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "06-landing-ticket"),
+         "--repo-dir", str(repo_dir)])
     return repo_dir
 
 
 def run_landing_pr_stage(ticket_repo: Path, work_dir: Path) -> Path:
     repo_dir = setup_stage("pr-agent", "07-landing-pr-clean", work_dir / "pr", previous=ticket_repo.parent)
-    # App.jsx is already part of the landing-init final state (clean PR that landed).
-    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "07-landing-pr-clean")])
+    # PR-77's merged result: the landing page implementation lands in App.jsx.
+    # Without this copy the work repo would still hold the init scaffold
+    # (<main>Hello</main>) and the clean-pass verdict would be vacuous.
+    shutil.copy(FIXTURES_DIR / "05-landing-init" / "repo" / "src" / "App.jsx",
+                repo_dir / "src" / "App.jsx")
+    run([sys.executable, str(RUN_FIXTURE), str(FIXTURES_DIR / "07-landing-pr-clean"),
+         "--repo-dir", str(repo_dir)])
     return repo_dir
 
 
@@ -386,7 +416,7 @@ def main() -> None:
         pr_repo = run_pr_stage(ticket_repo, work_root / "pr")
         print("\n--- pr stage passed ---\n")
     elif args.chain == "greenfield-landing-page":
-        init_repo = run_init_stage(work_root / "init")
+        init_repo = run_init_stage(work_root / "init", fixture_id="05-landing-init")
         print("\n--- init stage passed ---\n")
         ticket_repo = run_landing_ticket_stage(init_repo, work_root / "ticket")
         print("\n--- ticket stage passed ---\n")
